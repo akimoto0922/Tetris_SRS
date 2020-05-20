@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class NextMino : MonoBehaviour
 {
-    public GameObject gamemanager;
-    public GameObject next1;
+    public GameObject gameManager;  // GameManagerを参照
+    public GameObject next1;        // nextを表示するオブジェクト
     public GameObject next2;
     public GameObject next3;
     public GameObject next4;
@@ -24,7 +25,7 @@ public class NextMino : MonoBehaviour
 
     public Sprite[] m_Sprite;
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         m_Image = gameObject.GetComponent<Image>();
         Image_next1 = next1.GetComponent<Image>();
@@ -49,28 +50,29 @@ public class NextMino : MonoBehaviour
         {
             Debug.Log(i + "番目" + nextMino[i]);
         }
-        gamemanager.GetComponent<GameManager>().firstNum = nextMino[0];
+        gameManager.GetComponent<GameManager>().nextMino = nextMino[0];
     }
 
     // Update is called once per frame
     void Update()
     {
-        makeMino = gamemanager.GetComponent<GameManager>().makeMino;
+        makeMino = gameManager.GetComponent<GameManager>().makeMino;
 
         if (makeMino == true)
         {
+            // ミノが生成されたときnextMinoの中身をを繰り上げ配列の最後を空にする
+            var empty = 7;
             for (int i = 0; i < nextMino.Length - 1; i++)
             {
                 nextMino[i] = nextMino[i + 1];
             }
-            nextMino[13] = 7;
-            gamemanager.GetComponent<GameManager>().nextMino = nextMino[0];
+            nextMino[13] = empty;
+            gameManager.GetComponent<GameManager>().nextMino = nextMino[0];
 
             // ミノを補充
-            var empty = 7;
             if (nextMino[7] == empty)
             {
-                Debug.Log("ミノの補修");
+                Debug.Log("ミノの補充");
                 MinoDraw();
                 for (int i = 0; i < minoBox.Length; i++)
                 {

@@ -12,26 +12,25 @@ public class GameManager : MonoBehaviour
     [SerializeField] GameObject GameClearWindow = null;
 
     [SerializeField] public bool makeMino = false;  　// ミノの生成
-    [SerializeField] bool moveLeft = true;　　// 左に壁があるかどうか
-    [SerializeField] bool moveRight = true;　 // 右に壁があるかどうか
-    [SerializeField] float count = 0f;
-    [SerializeField] float checkcount = 0f;
-    [SerializeField] float overTime = 3.0f;
-    [SerializeField] float overTime2 = 0.8f;
+    [SerializeField] bool moveLeft = true;　        　// 左に壁があるかどうか
+    [SerializeField] bool moveRight = true;　         // 右に壁があるかどうか
+    [SerializeField] float count = 0f;                // deltaTimeを入れる変数
+    [SerializeField] float checkCount = 0f;           // deltaTimeを入れる変数
+    [SerializeField] float dropInterval = 3.0f;       // 落ちる速度
+    [SerializeField] float setInterval = 0.8f;　　　　// 設置される速度
 
     AudioSource sound1;
     AudioSource sound2;
     AudioSource sound3;
 
-    public int firstNum;
-    public int score;        // スコア
-    public int currentMino;  // 現在のミノ
-    public int nextMino;     // 次のミノ
-    public int holdMino;     // ホールド中のミノ
-    public int minoDirection;// ミノの向き
-    bool isGround;　　       // 空中にいるかかどうか
-    public bool isActive = true;    // 操作可能かどうか
-    bool isHold = false;     // ホールド中かどうか
+    public int score;              // スコア
+    public int currentMino;        // 現在のミノ
+    public int nextMino;           // 次のミノ
+    public int holdMino;           // ホールド中のミノ
+    public int minoDirection;      // ミノの向き
+    public bool isActive = true;   // 操作可能かどうか
+    bool isGround;　　             // 空中にいるかかどうか
+    bool isHold = false;           // ホールド中かどうか
 
     public int[,] field = new int[12, 22]
     {
@@ -50,46 +49,47 @@ public class GameManager : MonoBehaviour
 
     };
 
-    public int rotateCount; // 回転した回数
-    public int minoType;　　// ミノの種類
-
     public GameObject script;
     Rotation Script;
 
-    enum MinoType : int    // ミノは７種類 + Null で計８種類
+    enum MinoType : int    // ミノは７種類 + Null も含め計８種類
     {
-        T,     // 0
-        S,     // 1
-        Z,     // 2
-        L,     // 3
-        J,     // 4
-        O,     // 5
-        I,     // 6
-        Null,  // 7
+        T,
+        S,
+        Z,
+        L,
+        J,
+        O,
+        I,
+        Null,
+    }
+    enum MinoAngle : int
+    {
+        _0,
+        _90,
+        _180,
+        _270
+    }
+    enum FieldValue : int
+    {
+        Empty,
+        MinoBlock,
+        MinoBlock_Axis,
+        WallBlock,
     }
 
-    enum FieldValue : int    // ミノは７種類 + Null で計８種類
+    void Awake()
     {
-        Empty,            // 0
-        MinoBlock,        // 1
-        MinoBlock_Axis,   // 2
-        WallBlock,        // 3
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
+        Script = script.GetComponent<Rotation>();
         AudioSource[] audioSources = GetComponents<AudioSource>();
         sound1 = audioSources[0];
         sound2 = audioSources[1];
         sound3 = audioSources[2];
 
-        Script = script.GetComponent<Rotation>();
-        score = 0;
-
-        // ホールドを初期化
-        holdMino = (int) MinoType.Null;
-
+    }
+    // Start is called before the first frame update
+    void Start()
+    {
         // 枠を作る
         var field_bottom = 0;
         var field_top = 21;
@@ -112,86 +112,8 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        switch (firstNum)
-        {
-            case 0: // T
-
-                currentMino = (int)MinoType.T;
-
-                field[4, 19] = 1; // □■□
-                field[5, 19] = 2; // ■■■
-                field[5, 20] = 1; // □□□
-                field[6, 19] = 1;
-
-                break;
-
-            case 1: // S
-
-                currentMino = (int)MinoType.S;
-
-                field[4, 19] = 1; // □■■
-                field[5, 19] = 2; // ■■□
-                field[5, 20] = 1; // □□□
-                field[6, 20] = 1;
-
-                break;
-
-            case 2: // Z
-
-                currentMino = (int)MinoType.Z;
-
-                field[4, 20] = 1; // ■■□
-                field[5, 19] = 2; // □■■
-                field[5, 20] = 1; // □□□
-                field[6, 19] = 1;
-
-                break;
-
-            case 3: // L
-
-                currentMino = (int)MinoType.L;
-
-                field[4, 19] = 1; // □□■
-                field[5, 19] = 2; // ■■■
-                field[6, 19] = 1; // □□□
-                field[6, 20] = 1;
-
-                break;
-
-            case 4: // J
-
-                currentMino = (int)MinoType.J;
-
-                field[4, 19] = 1; // ■□□
-                field[5, 19] = 2; // ■■■
-                field[4, 20] = 1; // □□□
-                field[6, 19] = 1;
-
-                break;
-
-            case 5: // O
-
-                currentMino = (int)MinoType.O;
-
-                field[4, 19] = 1; // ■■□
-                field[5, 19] = 1; // ■■□
-                field[4, 20] = 1; // □□□
-                field[5, 20] = 1;
-
-                break;
-
-            case 6: // I
-
-                currentMino = (int)MinoType.I;
-
-                field[4, 19] = 1; // □□□□
-                field[5, 19] = 2; // ■■■■
-                field[6, 19] = 1; // □□□□
-                field[7, 19] = 1; // □□□□
-
-                break;
-
-        }
+        // 初期化
+        Initialize();
     }
 
     // Update is called once per frame
@@ -206,16 +128,16 @@ public class GameManager : MonoBehaviour
             // 次のミノを出す
             if (makeMino == true)
             {
-                minoDirection = 0;
+                minoDirection = (int)MinoAngle._0;
                 Create();
                 makeMino = false;
             }
             // 右回転
             if (Input.GetKeyDown(KeyCode.RightArrow))
             {
-                if (minoDirection == 3)
+                if (minoDirection == (int)MinoAngle._270)
                 {
-                    minoDirection = 0;
+                    minoDirection = (int)MinoAngle._0;
                 }
                 else
                 {
@@ -227,9 +149,9 @@ public class GameManager : MonoBehaviour
             // 左回転
             if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
-                if (minoDirection == 0)
+                if (minoDirection == (int)MinoAngle._0)
                 {
-                    minoDirection = 3;
+                    minoDirection = (int)MinoAngle._270;
                 }
                 else
                 {
@@ -271,8 +193,8 @@ public class GameManager : MonoBehaviour
 
                     if (isGround == true)
                     {
-                        Put();
-                        checkcount = 0;
+                        SetMino();
+                        checkCount = 0;
                     }
                     Fall();
                 }
@@ -281,9 +203,9 @@ public class GameManager : MonoBehaviour
             // ホールド
             if (Input.GetKeyDown(KeyCode.Q) && isHold == false)
             {
-                minoDirection = 0;
-                Hold();
+                minoDirection = (int)MinoAngle._0;
                 isHold = true;
+                Hold();
                 sound2.PlayOneShot(sound2.clip);
             }
         }
@@ -291,7 +213,7 @@ public class GameManager : MonoBehaviour
 
         // 落下
         count += Time.deltaTime;
-        if (count >= overTime && isGround == false)
+        if (count >= dropInterval && isGround == false)
         {
             Fall();
             count = 0;
@@ -300,19 +222,19 @@ public class GameManager : MonoBehaviour
         // 設置までの時間
         if (isGround == true && makeMino == false)
         {
-            checkcount += Time.deltaTime;
+            checkCount += Time.deltaTime;
             if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.A))
             {
-                checkcount -= 0.01f;
+                checkCount -= 0.01f;
             }
             else if (Input.GetKey(KeyCode.S))
             {
-                checkcount += 0.01f;
+                checkCount += 0.01f;
             }
-            if (checkcount >= overTime2)
+            if (checkCount >= setInterval)
             {
-                Put();
-                checkcount = 0;
+                SetMino();
+                checkCount = 0;
             }
         }
 
@@ -320,19 +242,20 @@ public class GameManager : MonoBehaviour
         CheckUnder();
         
         // 消えるかどうかの処理
-        Clear();
+        LineClear();
         // ゲームオーバーの判定
-        if (field[5, 19] == 3 || field[6, 19] == 3)
+        if (field[5, 19] == (int)FieldValue.WallBlock || field[6, 19] == (int)FieldValue.WallBlock)
         {
             isActive = false;
             makeMino = false;
             GameoverWindow.SetActive(true);
         }
 
-
         // ゲームクリアの処理
         if (score >= 4000)
         {
+            isActive = false;
+            makeMino = false;
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 OnRetry();
@@ -389,24 +312,8 @@ public class GameManager : MonoBehaviour
             Destroy(cube);
         }
     }
-    // 
-    void Put()
-    {
-        for (int i = 0; i < field.GetLength(0); i++)
-        {
 
-            for (int j = 1; j < field.GetLength(1); j++)
-            {
-                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
-                {
-                    field[i, j] = (int)FieldValue.WallBlock;
-                }
-                
-            }
-        }
-        makeMino = true;
-        isHold = false;
-    }
+    // 判定系の処理
     void CheckUnder()
     {
         int count = 0;
@@ -474,9 +381,9 @@ public class GameManager : MonoBehaviour
             for (int j = field.GetLength(0) - 1; j > 0; j--)
             {
 
-                if (field[j, i] == 1 || field[j, i] == 2)
+                if (field[j, i] == (int)FieldValue.MinoBlock || field[j, i] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    if (field[j - 1, i] == 3)
+                    if (field[j - 1, i] == (int)FieldValue.WallBlock)
                     {
                         moveLeft = false;
                         count++;
@@ -494,6 +401,8 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
+    // プレイヤーの操作処理
     void MoveRight()
     {
         for (int i = field.GetLength(0) - 1; i > 0; i--)
@@ -501,15 +410,15 @@ public class GameManager : MonoBehaviour
 
             for (int j = 0; j < field.GetLength(1); j++)
             {
-                if (field[i, j] == 1)
+                if (field[i, j] == (int)FieldValue.MinoBlock)
                 {
-                    field[i, j] = 0;
-                    field[i + 1, j] = 1;
+                    field[i, j] = (int)FieldValue.Empty;
+                    field[i + 1, j] = (int)FieldValue.MinoBlock;
                 }
-                if (field[i, j] == 2)
+                if (field[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    field[i, j] = 0;
-                    field[i + 1, j] = 2;
+                    field[i, j] = (int)FieldValue.Empty;
+                    field[i + 1, j] = (int)FieldValue.MinoBlock_Axis;
                 }
             }
         }
@@ -522,20 +431,22 @@ public class GameManager : MonoBehaviour
 
             for (int j = 0; j < field.GetLength(1); j++)
             {
-                if (field[i, j] == 1)
+                if (field[i, j] == (int)FieldValue.MinoBlock)
                 {
-                    field[i, j] = 0;
-                    field[i - 1, j] = 1;
+                    field[i, j] = (int)FieldValue.Empty;
+                    field[i - 1, j] = (int)FieldValue.MinoBlock;
                 }
-                if (field[i, j] == 2)
+                if (field[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    field[i, j] = 0;
-                    field[i - 1, j] = 2;
+                    field[i, j] = (int)FieldValue.Empty;
+                    field[i - 1, j] = (int)FieldValue.MinoBlock_Axis;
                 }
             }
         }
     }
-    void Clear()
+
+    // その他の機能
+    void LineClear()
     {
         // 1列全部数値が3なら消してShiftを呼び出す
         // まずは左の1列目だけを探索する
@@ -592,171 +503,109 @@ public class GameManager : MonoBehaviour
         }
         sound1.PlayOneShot(sound3.clip);
     }
+    void SetMino()
+    {
+        for (int i = 0; i < field.GetLength(0); i++)
+        {
+
+            for (int j = 1; j < field.GetLength(1); j++)
+            {
+                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    field[i, j] = (int)FieldValue.WallBlock;
+                }
+
+            }
+        }
+        makeMino = true;
+        isHold = false;
+    }
     void Create()
     {
-        switch (nextMino)
+        // nextMino(ホールド時は holdMino )の値を受け取り、ミノを指定の位置に生成する。
+        int createNum;
+        createNum = nextMino;
+        if (isHold == true)
         {
-            case 0: // T
+            createNum = holdMino;
+            holdMino = currentMino;
+        }
+        switch (createNum)
+        {
+            case (int)MinoType.T:
 
                 currentMino = (int)MinoType.T;
 
-                field[4, 19] = 1; // □■□
-                field[5, 19] = 2; // ■■■
-                field[5, 20] = 1; // □□□
-                field[6, 19] = 1;
+                field[4, 19] = (int)FieldValue.MinoBlock;      // □■□
+                field[5, 19] = (int)FieldValue.MinoBlock_Axis; // ■■■
+                field[5, 20] = (int)FieldValue.MinoBlock;      // □□□
+                field[6, 19] = (int)FieldValue.MinoBlock;
 
                 break;
 
-            case 1: // S
+            case (int)MinoType.S:
 
                 currentMino = (int)MinoType.S;
 
-                field[4, 19] = 1; // □■■
-                field[5, 19] = 2; // ■■□
-                field[5, 20] = 1; // □□□
-                field[6, 20] = 1;
+                field[4, 19] = (int)FieldValue.MinoBlock;        // □■■
+                field[5, 19] = (int)FieldValue.MinoBlock_Axis;   // ■■□
+                field[5, 20] = (int)FieldValue.MinoBlock;        // □□□
+                field[6, 20] = (int)FieldValue.MinoBlock;
 
                 break;
 
-            case 2: // Z
+            case (int)MinoType.Z:
 
                 currentMino = (int)MinoType.Z;
 
-                field[4, 20] = 1; // ■■□
-                field[5, 19] = 2; // □■■
-                field[5, 20] = 1; // □□□
-                field[6, 19] = 1;
+                field[4, 20] = (int)FieldValue.MinoBlock;        // ■■□
+                field[5, 19] = (int)FieldValue.MinoBlock_Axis;   // □■■
+                field[5, 20] = (int)FieldValue.MinoBlock;        // □□□
+                field[6, 19] = (int)FieldValue.MinoBlock;
 
                 break;
 
-            case 3: // L
+            case (int)MinoType.L:
 
                 currentMino = (int)MinoType.L;
 
-                field[4, 19] = 1; // □□■
-                field[5, 19] = 2; // ■■■
-                field[6, 19] = 1; // □□□
-                field[6, 20] = 1;
+                field[4, 19] = (int)FieldValue.MinoBlock;        // □□■
+                field[5, 19] = (int)FieldValue.MinoBlock_Axis;   // ■■■
+                field[6, 19] = (int)FieldValue.MinoBlock;        // □□□
+                field[6, 20] = (int)FieldValue.MinoBlock;
 
                 break;
 
-            case 4: // J
+            case (int)MinoType.J:
 
                 currentMino = (int)MinoType.J;
 
-                field[4, 19] = 1; // ■□□
-                field[5, 19] = 2; // ■■■
-                field[4, 20] = 1; // □□□
-                field[6, 19] = 1;
+                field[4, 19] = (int)FieldValue.MinoBlock;        // ■□□
+                field[5, 19] = (int)FieldValue.MinoBlock_Axis;   // ■■■
+                field[4, 20] = (int)FieldValue.MinoBlock;        // □□□
+                field[6, 19] = (int)FieldValue.MinoBlock;
 
                 break;
 
-            case 5: // O
+            case (int)MinoType.O:
 
                 currentMino = (int)MinoType.O;
 
-                field[4, 19] = 1; // ■■□
-                field[5, 19] = 1; // ■■□
-                field[4, 20] = 1; // □□□
-                field[5, 20] = 1;
+                field[4, 19] = (int)FieldValue.MinoBlock;        // ■■□
+                field[5, 19] = (int)FieldValue.MinoBlock;        // ■■□
+                field[4, 20] = (int)FieldValue.MinoBlock;        // □□□
+                field[5, 20] = (int)FieldValue.MinoBlock;
 
                 break;
 
-            case 6: // I
+            case (int)MinoType.I:
 
                 currentMino = (int)MinoType.I;
 
-                field[4, 19] = 1; // □□□□
-                field[5, 19] = 2; // ■■■■
-                field[6, 19] = 1; // □□□□
-                field[7, 19] = 1; // □□□□
-
-                break;
-
-        }
-    }
-    void HoldCreate()
-    {
-        int createNum;
-        createNum = holdMino;
-        holdMino = currentMino;
-
-        switch (createNum)
-        {
-            case 0: // T
-
-                currentMino = 0;
-
-                field[4, 19] = 1; // □■□
-                field[5, 19] = 2; // ■■■
-                field[5, 20] = 1; // □□□
-                field[6, 19] = 1;
-
-                break;
-
-            case 1: // S
-
-                currentMino = (int)MinoType.S;
-
-                field[4, 19] = 1; // □■■
-                field[5, 19] = 2; // ■■□
-                field[5, 20] = 1; // □□□
-                field[6, 20] = 1;
-
-                break;
-
-            case 2: // Z
-
-                currentMino = (int)MinoType.Z;
-
-                field[4, 20] = 1; // ■■□
-                field[5, 19] = 2; // □■■
-                field[5, 20] = 1; // □□□
-                field[6, 19] = 1;
-
-                break;
-
-            case 3: // L
-
-                currentMino = (int)MinoType.L;
-
-                field[4, 19] = 1; // □□■
-                field[5, 19] = 2; // ■■■
-                field[6, 19] = 1; // □□□
-                field[6, 20] = 1;
-
-                break;
-
-            case 4: // J
-
-                currentMino = (int)MinoType.J;
-
-                field[4, 19] = 1; // ■□□
-                field[5, 19] = 2; // ■■■
-                field[4, 20] = 1; // □□□
-                field[6, 19] = 1;
-
-                break;
-
-            case 5: // O
-
-                currentMino = (int)MinoType.O;
-
-                field[4, 19] = 1; // ■■□
-                field[5, 19] = 1; // ■■□
-                field[4, 20] = 1; // □□□
-                field[5, 20] = 1;
-
-                break;
-
-            case 6: // I
-
-                currentMino = (int)MinoType.I;
-
-                field[4, 19] = 1; // □□□□
-                field[5, 19] = 2; // ■■■■
-                field[6, 19] = 1; // □□□□
-                field[7, 19] = 1;
+                field[4, 19] = (int)FieldValue.MinoBlock;        // □□□□
+                field[5, 19] = (int)FieldValue.MinoBlock_Axis;   // ■■■■
+                field[6, 19] = (int)FieldValue.MinoBlock;        // □□□□
+                field[7, 19] = (int)FieldValue.MinoBlock;        // □□□□
 
                 break;
 
@@ -769,40 +618,43 @@ public class GameManager : MonoBehaviour
 
             for (int j = 1; j < field.GetLength(1) - 1; j++)
             {
-                if (field[i, j] == 1 || field[i, j] == 2)
+                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    field[i, j] = 0;
+                    field[i, j] = (int)FieldValue.Empty;
                 }
             }
         }
 
-
-        if (holdMino == (int)MinoType.Null)
+        if (holdMino == (int)MinoType.Null) // ホールドしてるミノがないとき
         {
             holdMino = currentMino;
+            isHold = false;
             makeMino = true;
         }
         else
         {
-            HoldCreate();
+            Create();
         }
     }
-    public void OnRetry()
+    void Initialize()
     {
-        GameoverWindow.SetActive(false);
-        GameClearWindow.SetActive(false);
-
         for (int i = 1; i < field.GetLength(0) - 1; i++)
         {
 
             for (int j = 1; j < field.GetLength(1) - 1; j++)
             {
-                field[i, j] = 0;
+                field[i, j] = (int)FieldValue.Empty;
             }
         }
         score = 0;
-        holdMino = 7;
+        holdMino = (int)MinoType.Null;
         makeMino = true;
         isActive = true;
+    }
+    public void OnRetry()
+    {
+        GameoverWindow.SetActive(false);
+        GameClearWindow.SetActive(false);
+        Initialize();
     }
 }

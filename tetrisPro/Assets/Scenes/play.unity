@@ -569,18 +569,15 @@ MonoBehaviour:
   moveLeft: 1
   moveRight: 1
   count: 0
-  checkcount: 0
-  overTime: 1
-  overTime2: 3
-  firstNum: 0
+  checkCount: 0
+  dropInterval: 3
+  setInterval: 0.8
   score: 0
   currentMino: 0
   nextMino: 0
   holdMino: 0
   minoDirection: 0
   isActive: 1
-  rotateCount: 0
-  minoType: 0
   script: {fileID: 1444953614}
 --- !u!4 &102306917
 Transform:
@@ -6573,7 +6570,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a476b6731dfa9f489c88a8b1ef456ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gamemanager: {fileID: 102306915}
+  gameManager: {fileID: 102306915}
   next1: {fileID: 1114139375}
   next2: {fileID: 585279590}
   next3: {fileID: 626774175}
