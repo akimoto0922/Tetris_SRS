@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
-    public GameObject gamemanager;
+    public GameObject Player;
     public GameObject GameClearWindow;
-    public GameObject player;
+    public GameObject GameOverWindow;
 
     Vector3 playerPos;
 
@@ -18,51 +18,66 @@ public class LevelManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        playerPos = player.transform.position;
+        playerPos = Player.transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-        playerPos = player.transform.position;
+        playerPos = Player.transform.position;
 
-        score = gamemanager.GetComponent<GameManager>().score;
-        makeMino = gamemanager.GetComponent<GameManager>().makeMino;
-        isActive = gamemanager.GetComponent<GameManager>().isActive;
-        field = gamemanager.GetComponent<GameManager>().field;
 
-        // キャラクターの移動
+        score = Player.GetComponent<PlayerController>().score;
+        makeMino = Player.GetComponent<PlayerController>().makeMino;
+        isActive = Player.GetComponent<PlayerController>().isActive;
+        field = Player.GetComponent<PlayerController>().field;
+
+        // ゲームオーバー
+        if (isActive == false && score < 4000)
+        {
+            GameOverWindow.SetActive(true);
+            makeMino = false;
+        }
+
+        // リトライ時に非表示にする
+        if (isActive == true)
+        {
+            GameClearWindow.SetActive(false);
+            GameOverWindow.SetActive(false);
+        }
+
+        //　ゲームクリア
         if (score >= 4000)
         {
             // クリア時の Window を表示
             GameClearWindow.SetActive(true);
-            isActive = false;
             makeMino = false;
 
+            var ClearMino = 6; 
             for (int i = 1; i < field.GetLength(0) - 1; i++)
             {
 
                 for (int j = 1; j < field.GetLength(1) - 1; j++)
                 {
-                    field[i, j] = 6;
+                    field[i, j] = ClearMino;
                 }
             }
 
             playerPos.x = 19;
             playerPos.y = 14;
-            player.transform.position = playerPos;
+            Player.transform.position = playerPos;
         }
         else if (4000 > score && score >= 2000)
         {
             playerPos.x = 25;
             playerPos.y = 8;
-            player.transform.position = playerPos;
+            Player.transform.position = playerPos;
         }
         else
         {
             playerPos.x = 20;
             playerPos.y = 1;
-            player.transform.position = playerPos;
+            Player.transform.position = playerPos;
         }
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class ScoreManager : MonoBehaviour
 {
-    public GameObject gamemanager;
+    public GameObject PlayerController;
     public Text scoreText;
     public Text highScoreText;
 
@@ -21,7 +21,7 @@ public class ScoreManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        score = gamemanager.GetComponent<GameManager>().score;
+        score = PlayerController.GetComponent<PlayerController>().score;
 
         if (highScore < score)
         {

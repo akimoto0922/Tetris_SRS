@@ -1,62 +1,69 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 public class Rotation : MonoBehaviour
 {
-    public GameObject gamemanager;
-    public int minoDirection; // ミノの向き
-    int currentMino;          // 現在のミノ
-　　int count;                // テストをするときに使う
-    int minoPos_x;            // ミノを強制移動させるときに使う
-    int minoPos_y;            // ミノを強制移動させるときに使う
+    int[,] minoArray = new int[12, 22];
+    int[,] wallArray = new int[12, 22];
+    int[,] initialPosArray = new int[12, 22];
+    int[,] array_mino_test = new int[4, 4];
 
-    int[,] field = new int[12, 22];
-    int[,] fieldArray = new int[12, 22];    // fieldの壁の場所のコピー
-    int[,] minoArray = new int[12, 22];     // fieldのミノの場所コピー
-    int[,] array_mino_test = new int[4, 4]; // 回転させるときに使う
-
-    void Update()
+    bool canRotate;
+    enum FieldValue : int
     {
-        minoDirection = gamemanager.GetComponent<GameManager>().minoDirection;
+        Empty,
+        MinoBlock,
+        MinoBlock_Axis,
+        WallBlock,
     }
-    // テストの数は4種類
-    // ＜右回転＞
-    // ・J,L,S,Z,Tミノ
-    // A→B→C→D
-    // ＜左回転＞
-    // ・J,L,S,Z,Tミノ
-    // C→D→A→B
 
-    public void RightSpin()
+    enum MinoAngle : int
     {
-        // ①値を参照する
-        field = gamemanager.GetComponent<GameManager>().field;
-        currentMino = gamemanager.GetComponent<GameManager>().currentMino;
-        minoDirection = gamemanager.GetComponent<GameManager>().minoDirection;
+        _0,
+        _90,
+        _180,
+        _270
+    }
 
-        if (currentMino == 5)
+    enum MinoType : int    // ミノは７種類 + Null も含め計8種類
+    {
+        T,
+        S,
+        Z,
+        L,
+        J,
+        O,
+        I,
+        Null,
+    }
+
+    public void RightSpin(ref int[,] field, int currentMino, ref int minoDirection)
+    {
+        if (currentMino == (int)MinoType.O)
         {
             // O(オー)ミノは回転しないのでテストは行わない。
+            return;
         }
-        else if (currentMino == 6) // Iミノ
+        else if (currentMino == (int)MinoType.I) // Iミノ
         {
             switch (minoDirection)
             {
                 case 0:
-                    IminoTest_270_360();
+                    IminoTest_0_90(ref field, ref minoDirection);
                     break;
 
                 case 1:
-                    IminoTest_0_90();
+                    IminoTest_90_180(ref field, ref minoDirection);
                     break;
 
                 case 2:
-                    IminoTest_90_180();
+                    IminoTest_180_270(ref field, ref minoDirection);
                     break;
 
                 case 3:
-                    IminoTest_180_270();
+                    IminoTest_270_360(ref field, ref minoDirection);
                     break;
             }
         }
@@ -65,52 +72,49 @@ public class Rotation : MonoBehaviour
             switch (minoDirection)
             {
                 case 0:
-                    Test_270_360();
+                    Test_0_90(ref field, ref minoDirection);
                     break;
 
                 case 1:
-                    Test_0_90();
+                    Test_90_180(ref field, ref minoDirection);
                     break;
 
                 case 2:
-                    Test_90_180();
+                    Test_180_270(ref field, ref minoDirection);
                     break;
 
                 case 3:
-                    Test_180_270();
+                    Test_270_360(ref field, ref minoDirection);
                     break;
             }
         }
     }
 
-    public void LeftSpin()
+    public void LeftSpin(ref int[,] field, int currentMino, ref int minoDirection)
     {
-        field = gamemanager.GetComponent<GameManager>().field;
-        currentMino = gamemanager.GetComponent<GameManager>().currentMino;
-        minoDirection = gamemanager.GetComponent<GameManager>().minoDirection;
-
-        if (currentMino == 5)
+        if (currentMino == (int)MinoType.O)
         {
-            // Oミノは回転しないのでテストは行わない。
+            // O(オー)ミノは回転しないのでテストは行わない。
+            return;
         }
-        else if (currentMino == 6)  // Iミノ
+        else if (currentMino == (int)MinoType.I)  // Iミノ
         {
             switch (minoDirection)
             {
                 case 0:
-                    IminoTest_90_0();
+                    IminoTest_360_270(ref field, ref minoDirection);
                     break;
 
                 case 1:
-                    IminoTest_180_90();
+                    IminoTest_90_0(ref field, ref minoDirection);
                     break;
 
                 case 2:
-                    IminoTest_270_180();
+                    IminoTest_180_90(ref field, ref minoDirection);
                     break;
 
                 case 3:
-                    IminoTest_360_270();
+                    IminoTest_270_180(ref field, ref minoDirection);
                     break;
             }
         }
@@ -119,19 +123,20 @@ public class Rotation : MonoBehaviour
             switch (minoDirection)
             {
                 case 0:
-                    Test_90_0();
+                    Test_360_270(ref field, ref minoDirection);
                     break;
 
                 case 1:
-                    Test_180_90();
+                    Test_90_0(ref field, ref minoDirection);
+                    
                     break;
 
                 case 2:
-                    Test_270_180();
+                    Test_180_90(ref field, ref minoDirection);
                     break;
 
                 case 3:
-                    Test_360_270();
+                    Test_270_180(ref field, ref minoDirection);
                     break;
             }
         }
@@ -146,1608 +151,946 @@ public class Rotation : MonoBehaviour
     // wiki参考 https://tetris.wiki/Super_Rotation_System
 
     // 右回転のテスト
-    void Test_0_90()
+    void Test_0_90(ref int[,] field, ref int minoDirection)
     {
         // 配列をコピー
-        Copy();
+        Copy(field, ref minoArray, ref wallArray);
 
         // 回転させる
-        RotateRight_minoArray();
+        RotateRight(ref minoArray);
 
-        // 配列を比較
-        Compare();
-
-        // 成功なら
-        if (count == 4) // ←この4はテトリミノが4つのブロックからできているから。
+        Copy_RespownPos(minoArray, ref initialPosArray);
+        // テスト開始
+        for (int i = 0; i < 5; i++)
         {
-            // fieldのミノを回転させて描画
-            Rotate_field();
-            count = 0;
-            // コピーした配列の初期化
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            // 2回目
-            count = 0;
-            // ミノの位置を指定し(今回は(-1,0))強制的に移動
-            MoveLeft_minoArray();
-            // 改めて比較する
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("左に1列ずらしたら回転成功！");
+                case 0:
+                    UnityEngine.Debug.Log("1回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, 0);
+                    break;
+
+                case 1:
+                    UnityEngine.Debug.Log("2回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 2:
+                    UnityEngine.Debug.Log("3回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 1);
+                    break;
+
+                case 3:
+                    UnityEngine.Debug.Log("4回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, -2);
+                    break;
+
+                case 4:
+                    UnityEngine.Debug.Log("5回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, -2);
+                    break;
             }
-            else
+            // 配列を比較
+            Compare(minoArray, wallArray);
+
+            // 成功なら
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                // 3回目
-                count = 0;
-                MoveUp_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に1列ずらし、上に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    // 4回目
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("下に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        // 5回目
-                        count = 0;
-                        MoveLeft_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に1列ずらし、下に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection = 0;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 1;
+                // fieldのミノを回転させて描画
+                Rotate_field(ref field, minoArray);
+                // コピーした配列の初期化
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        // すべて失敗したら
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void Test_90_180()
+    void Test_90_180(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateRight_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateRight(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+                    UnityEngine.Debug.Log("1回目");
+                    break;
+
+                case 1:
+                    UnityEngine.Debug.Log("2回目");
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 2:
+                    UnityEngine.Debug.Log("3回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, -1);
+                    break;
+
+                case 3:
+                    UnityEngine.Debug.Log("4回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, 2);
+                    break;
+
+                case 4:
+                    UnityEngine.Debug.Log("5回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveDown_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveLeft_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveRight_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection --;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 2;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void Test_180_270()
+    void Test_180_270(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateRight_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateRight(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 1);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, -2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, -2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveUp_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveLeft_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveRight_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection = 2;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 3;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void Test_270_360()
+    void Test_270_360(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateRight_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateRight(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("左に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, -1);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, 2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveDown_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に1列ずらし、上に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("下に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に1列ずらし、下に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection  = 3;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 0;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
 
     // 左回転のテスト
-    void Test_360_270()
+    void Test_360_270(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateLeft_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateLeft(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 1);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, -2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, -2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveUp_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveLeft_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveRight_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection = 0;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 3;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void Test_270_180()
+    void Test_270_180(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateLeft_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateLeft(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("左に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, -1);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, 2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveDown_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に1列ずらし、上に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("下に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に1列ずらし、下に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection = 3;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 2;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void Test_180_90()
+    void Test_180_90(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateLeft_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateLeft(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("左に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 1);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, -2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, -2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveUp_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に1列ずらし、上に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("下に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に1列ずらし、下に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection = 2;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 1;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void Test_90_0()
+    void Test_90_0(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        RotateLeft_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        RotateLeft(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, -1);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, 2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveDown_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    //MoveMino_fieldArray_2();
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    // 4回目
-                    count = 0;
-                    MoveLeft_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        // 5回目
-                        count = 0;
-                        MoveRight_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            Debug.Log("回転できない；；");
-                            minoDirection = 1;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 0;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
 
     // Iミノのテスト 右回転
-    void IminoTest_0_90()
+    void IminoTest_0_90(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_0_90_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_0_90(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("左に2列ずらしたら回転成功！");
+                case 0:
+                    UnityEngine.Debug.Log("1回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 0, 0);
+                    break;
+
+                case 1:
+                    UnityEngine.Debug.Log("2回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, 0);
+                    break;
+
+                case 2:
+                    UnityEngine.Debug.Log("3回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 3:
+                    UnityEngine.Debug.Log("4回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, -1);
+                    break;
+
+                case 4:
+                    UnityEngine.Debug.Log("5回目");
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("右に1列ずらし,上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に2列ずらし、下に1列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 1;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void IminoTest_90_180()
+    void IminoTest_90_180(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_90_180_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_90_180(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 2, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 2, -1);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveLeft_minoArray();
-                    MoveLeft_minoArray();
-                    MoveLeft_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveRight_minoArray();
-                        MoveRight_minoArray();
-                        MoveRight_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 2;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void IminoTest_180_270()
+    void IminoTest_180_270(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_180_270_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_180_270(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に2列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 2, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 2, 1);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, -2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("右に2列ずらし、上に1列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に1列ずらし、下に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 3;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void IminoTest_270_360()
+    void IminoTest_270_360(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_270_360_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_270_360(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, -2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, 1);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に2列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("右に1列ずらし、下に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveUp_minoArray();
-                        MoveUp_minoArray();
-                        MoveUp_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に2列ずらし、上に1列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 0;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
 
     // Iミノのテスト 左回転
-    void IminoTest_360_270()
+    void IminoTest_360_270(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_360_270_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_360_270(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 2, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 2, -1);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveLeft_minoArray();
-                    MoveLeft_minoArray();
-                    MoveLeft_minoArray();
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveRight_minoArray();
-                        MoveRight_minoArray();
-                        MoveRight_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 3;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void IminoTest_270_180()
+    void IminoTest_270_180(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_270_180_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_270_180(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveLeft_minoArray();
-            MoveLeft_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("左に2列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, -2, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, -1);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, 2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                MoveRight_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveUp_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("右に1列ずらし,上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に2列ずらし、下に1列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 2;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void IminoTest_180_90()
+    void IminoTest_180_90(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_180_90_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_180_90(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 1, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 1, -2);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -2, 1);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("左に2列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveDown_minoArray();
-                    MoveDown_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("右に1列ずらし、下に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveUp_minoArray();
-                        MoveUp_minoArray();
-                        MoveUp_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("左に2列ずらし、上に1列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 1;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
-    void IminoTest_90_0()
+    void IminoTest_90_0(ref int[,] field, ref int minoDirection)
     {
-        Copy();
-        IminoRotate_90_0_minoArray();
-        Compare();
+        Copy(field, ref minoArray, ref wallArray);
+        IminoRotate_90_0(ref minoArray);
+        Copy_RespownPos(minoArray, ref initialPosArray);
 
-        if (count == 4)
+        for (int i = 0; i < 5; i++)
         {
-            Rotate_field();
-            count = 0;
-            Initialize_All();
-            Debug.Log("回転成功！");
-        }
-        else
-        {
-            Debug.Log("回転失敗；；　次のテストへ");
-            count = 0;
-            MoveRight_minoArray();
-            MoveRight_minoArray();
-            Compare();
-
-            if (count == 4)
+            switch (i)
             {
-                Rotate_field();
-                count = 0;
-                Initialize_All();
-                Debug.Log("右に1列ずらしたら回転成功！");
+                case 0:
+
+                    break;
+
+                case 1:
+                    ForcedMoveMino(ref minoArray, 2, 0);
+                    break;
+
+                case 2:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, 0);
+                    break;
+
+                case 3:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, 2, 1);
+                    break;
+
+                case 4:
+                    Respown(ref minoArray, initialPosArray);
+                    ForcedMoveMino(ref minoArray, -1, -2);
+                    break;
             }
-            else
+            Compare(minoArray, wallArray);
+
+            if (canRotate == true)
             {
-                Debug.Log("回転失敗；；　次のテストへ");
-                count = 0;
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                MoveLeft_minoArray();
-                Compare();
-
-                if (count == 4)
-                {
-                    Rotate_field();
-                    count = 0;
-                    Initialize_All();
-                    Debug.Log("右に1列ずらし、下に1列ずらしたら回転成功！");
-                }
-                else
-                {
-                    Debug.Log("回転失敗；；　次のテストへ");
-                    count = 0;
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveRight_minoArray();
-                    MoveUp_minoArray();
-                    Compare();
-
-                    if (count == 4)
-                    {
-                        Rotate_field();
-                        count = 0;
-                        Initialize_All();
-                        Debug.Log("上に2列ずらしたら回転成功！");
-                    }
-                    else
-                    {
-                        Debug.Log("回転失敗；；　次のテストへ");
-                        count = 0;
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveLeft_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        MoveDown_minoArray();
-                        Compare();
-
-                        if (count == 4)
-                        {
-                            Rotate_field();
-                            count = 0;
-                            Initialize_All();
-                            Debug.Log("右に1列ずらし、上に2列ずらしたら回転成功！");
-                        }
-                        else
-                        {
-                            minoDirection--;
-                            gamemanager.GetComponent<GameManager>().minoDirection = minoDirection;
-
-                            Debug.Log("回転できない；；");
-                            count = 0;
-                            Initialize_All();
-                        }
-                    }
-                }
+                minoDirection = 0;
+                Rotate_field(ref field, minoArray);
+                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                UnityEngine.Debug.Log("回転成功！");
+                return;
             }
         }
+        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        UnityEngine.Debug.Log("回転できない。");
     }
 
-    // ミノの強制移動
-    void MoveLeft_minoArray()
+    // <ミノの強制移動>
+    void ForcedMoveMino(ref int[,] minoArray, int minoPos_x, int minoPos_y)
     {
-        minoPos_x = -1;
-        minoPos_y = 0;
+        // ①回転後のミノの座標を仮置きの配列にコピーする
+        int[,] copyArray = new int[12, 22];
 
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (minoArray[i, j] == 1 || minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
+                    // 範囲外処理
                     var x = i + minoPos_x;
-                    if (x < 1)
-                    {
-                        // 範囲外処理
-                        minoPos_x = 0;
-
-                    }
-                    minoArray[i + minoPos_x, j + minoPos_y] = minoArray[i, j];
-                    minoArray[i, j] = 0;
-                }
-            }
-        }
-    }
-    void MoveRight_minoArray()
-    {
-        minoPos_x = 1;
-        minoPos_y = 0;
-
-        for (int i = minoArray.GetLength(0) - 1; i >= 0; i--)
-        {
-            for (int j = 0; j < minoArray.GetLength(1); j++)
-            {
-                if (minoArray[i, j] == 1 || minoArray[i, j] == 2)
-                {
-                    var x = i + minoPos_x;
-                    if (x >= minoArray.GetLength(0))
-                    {
-                        // 範囲外処理
-                        minoPos_x = 0;
-
-                    }
-                    minoArray[i + minoPos_x, j + minoPos_y] = minoArray[i, j];
-                    minoArray[i, j] = 0;
-                }
-            }
-        }
-    }
-    void MoveUp_minoArray()
-    {
-        minoPos_x = 0;
-        minoPos_y = 1;
-
-        for (int i = 0; i < minoArray.GetLength(0); i++)
-        {
-            for (int j = minoArray.GetLength(1) - 1; j >= 0 ; j--)
-            {
-                if (minoArray[i, j] == 1 || minoArray[i, j] == 2)
-                {
                     var y = j + minoPos_y;
-                    if (y >= minoArray.GetLength(1))
+                    if (x >= minoArray.GetLength(0) || 0 >= x || j >= minoArray.GetLength(1) || 0 >= j)
                     {
-                        minoPos_y = 0;
+                        UnityEngine.Debug.Log("あばっばばばばばばばば");
+                        return;
                     }
-                    minoArray[i + minoPos_x, j + minoPos_y] = minoArray[i, j];
-                    minoArray[i, j] = 0;
+                    copyArray[i + minoPos_x, j + minoPos_y] = minoArray[i, j];
                 }
             }
         }
 
-    }
-    void MoveDown_minoArray()
-    {
-        minoPos_x = 0;
-        minoPos_y = -1;
-
+        // ②minoArrayを初期化
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (minoArray[i, j] == 1 || minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    var y = j + minoPos_y;
-                    if (y < 0 )
-                    {
-                        minoPos_y = 0;
-                    }
-                    minoArray[i + minoPos_x, j + minoPos_y] = minoArray[i, j];
-                    minoArray[i, j] = 0;
+                    minoArray[i, j] = (int)FieldValue.Empty;
                 }
+            }
+        }
+
+        // ③仮置きの配列の値をminoArrayに代入する
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+                if (copyArray[i, j] == (int)FieldValue.MinoBlock || copyArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    minoArray[i, j] = copyArray[i, j];
+                }
+            }
+        }
+
+        // ④copyArrayを初期化
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+                copyArray[i, j]　= 0;
             }
         }
     }
 
     // <コピー>
-    void Copy()
+    void Copy(int[,] field, ref int[,] minoArray, ref int[,] wallArray)
     {
+        // fieldのミノと壁をそれぞれ別の配列にコピーする
         for (int i = 0; i < field.GetLength(0); i++)
         {
             for (int j = 0; j < field.GetLength(1); j++)
             {
                 // ミノ
-                if (field[i, j] == 1 || field[i, j] == 2)
+                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
                     minoArray[i, j] = field[i, j];
                 }
 
                 // 壁
-                if (field[i, j] == 3)
+                if (field[i, j] == (int)FieldValue.WallBlock)
                 {
-                    fieldArray[i, j] = field[i, j];
+                    wallArray[i, j] = field[i, j];
                 }
             }
         }
-    } 
+    }
+
+    // <初期位置をコピー>
+    void Copy_RespownPos(int[,] minoArray, ref int[,] initialPosArray)
+    {
+        // fieldのミノと壁をそれぞれ別の配列にコピーする
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+                // ミノ
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    initialPosArray[i, j] = minoArray[i, j];
+                }
+            }
+        }
+    }
+
 
     // <比較>
-    void Compare()
+    void Compare(int[,] minoArray, int[,] wallArray)
+    {
+        int count = 0;
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis && wallArray[i, j] == (int)FieldValue.Empty)
+                {
+                    count++;
+                    UnityEngine.Debug.Log("count+1 回転軸");
+                }
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock && wallArray[i, j] == (int)FieldValue.Empty)
+                {
+                    count++;
+                    UnityEngine.Debug.Log("count+1 ほかのブロック");
+                }
+            }
+        }
+        if (count >= 4)
+        {
+            canRotate = true;
+        }
+        else
+        {
+            canRotate = false;
+        }
+    }
+
+    // <初期位置へ移動>
+    void Respown(ref int[,] minoArray, int[,] initialPosArray)
     {
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (minoArray[i, j] == 2 && fieldArray[i, j] == 0)
-                {
-                    count++;
-                    Debug.Log("count+1 回転軸");
-                }
-                if (minoArray[i, j] == 1 && fieldArray[i, j] == 0)
-                {
-                    count++;
-                    Debug.Log("count+1 ほかのブロック");
-                }
+                minoArray[i, j] = initialPosArray[i, j];
             }
         }
     }
 
     // <回転関連>
     // ミノの回転
-    void RotateRight_minoArray()
+    void RotateRight(ref int[,] minoArray)
     {
+       
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
 
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
                     array_mino_test[0, 0] = minoArray[i - 1, j + 1];
                     array_mino_test[0, 1] = minoArray[i, j + 1];
@@ -1758,14 +1101,14 @@ public class Rotation : MonoBehaviour
                     array_mino_test[2, 0] = minoArray[i - 1, j - 1];
                     array_mino_test[1, 0] = minoArray[i - 1, j];
 
-                    minoArray[i + 1, j] = 0;
-                    minoArray[i + 1, j - 1] = 0;
-                    minoArray[i + 1, j + 1] = 0;
-                    minoArray[i, j + 1] = 0;
-                    minoArray[i - 1, j + 1] = 0;
-                    minoArray[i - 1, j] = 0;
-                    minoArray[i - 1, j - 1] = 0;
-                    minoArray[i, j - 1] = 0;
+                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i, j - 1] = (int)FieldValue.Empty;
 
                     minoArray[i + 1, j + 1] = array_mino_test[0, 0];
                     minoArray[i + 1, j] = array_mino_test[0, 1];
@@ -1779,15 +1122,16 @@ public class Rotation : MonoBehaviour
             }
         }
 
+        // 一時的に保存しとくための配列を使用後に初期化する
         for (int i = 0; i < array_mino_test.GetLength(0); i++)
         {
             for (int j = 0; j < array_mino_test.GetLength(1); j++)
             {
-                array_mino_test[i,j] = 0;
+                array_mino_test[i, j] = (int)FieldValue.Empty;
             }
         }
     }
-    void RotateLeft_minoArray()
+    void RotateLeft(ref int[,] minoArray)
     {
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
@@ -1795,7 +1139,7 @@ public class Rotation : MonoBehaviour
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
                     array_mino_test[0, 0] = minoArray[i - 1, j + 1];
                     array_mino_test[0, 1] = minoArray[i, j + 1];
@@ -1806,14 +1150,14 @@ public class Rotation : MonoBehaviour
                     array_mino_test[2, 0] = minoArray[i - 1, j - 1];
                     array_mino_test[1, 0] = minoArray[i - 1, j];
 
-                    minoArray[i + 1, j] = 0;
-                    minoArray[i + 1, j - 1] = 0;
-                    minoArray[i + 1, j + 1] = 0;
-                    minoArray[i, j + 1] = 0;
-                    minoArray[i - 1, j + 1] = 0;
-                    minoArray[i - 1, j] = 0;
-                    minoArray[i - 1, j - 1] = 0;
-                    minoArray[i, j - 1] = 0;
+                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i, j - 1] = (int)FieldValue.Empty;
 
                     minoArray[i - 1, j - 1] = array_mino_test[0, 0];
                     minoArray[i - 1, j] = array_mino_test[0, 1];
@@ -1827,134 +1171,19 @@ public class Rotation : MonoBehaviour
             }
         }
 
+        // 一時的に保存しとくための配列を使用後に初期化する
         for (int i = 0; i < array_mino_test.GetLength(0); i++)
         {
             for (int j = 0; j < array_mino_test.GetLength(1); j++)
             {
-                array_mino_test[i,j] = 0; 
+                array_mino_test[i, j] = (int)FieldValue.Empty;
             }
         }
     }
 
-    // Iミノの右回転
-    void IminoRotate_0_90_minoArray()
-    {
-        for (int i =  minoArray.GetLength(0) - 1; i > 0; i--)
-        {
-
-            for (int j = 0; j < minoArray.GetLength(1); j++)
-            {
-
-                if (minoArray[i, j] == 2)
-                {
-                    minoArray[i, j] = 0;
-                    minoArray[i - 1, j] = 0;
-                    minoArray[i + 1, j] = 0;
-                    minoArray[i + 2, j] = 0;
-
-                    minoArray[i + 1, j + 1] = 1;
-                    minoArray[i + 1, j] = 2;
-                    minoArray[i + 1, j - 1] = 1;
-                    minoArray[i + 1, j - 2] = 1;
-                }
-            }
-        }
-    }
-    void IminoRotate_90_180_minoArray()
-    {
-        for (int i = 0; i < minoArray.GetLength(0); i++)
-        {
-
-            for (int j = 0; j < minoArray.GetLength(1); j++)
-            {
-
-                if (minoArray[i, j] == 2)
-                {
-                    minoArray[i, j] = 0;
-                    minoArray[i, j + 1] = 0;
-                    minoArray[i, j - 1] = 0;
-                    minoArray[i, j - 2] = 0;
-
-                    minoArray[i - 2, j - 1] = 1;
-                    minoArray[i - 1, j - 1] = 1;
-                    minoArray[i, j - 1] = 2;
-                    minoArray[i + 1, j - 1] = 1;
-                }
-            }
-        }
-    }
-    void IminoRotate_180_270_minoArray()
-    {
-        for (int i = 0; i < minoArray.GetLength(0); i++)
-        {
-
-            for (int j = 0; j < minoArray.GetLength(1); j++)
-            {
-
-                if (minoArray[i, j] == 2)
-                {
-                    minoArray[i, j] = 0;
-                    minoArray[i - 2, j] = 0;
-                    minoArray[i - 1, j] = 0;
-                    minoArray[i + 1, j] = 0;
-
-                    minoArray[i - 1, j + 1] = 1;
-                    minoArray[i - 1, j] = 2;
-                    minoArray[i - 1, j - 1] = 1;
-                    minoArray[i - 1, j + 2] = 1;
-                }
-            }
-        }
-    }
-    void IminoRotate_270_360_minoArray()
-    {
-        for (int i = minoArray.GetLength(0) - 1; i > 0; i--)
-        {
-
-            for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
-            {
-
-                if (minoArray[i, j] == 2)
-                {
-                    minoArray[i, j] = 0;
-                    minoArray[i, j + 1] = 0;
-                    minoArray[i, j + 2] = 0;
-                    minoArray[i, j - 1] = 0;
-
-                    minoArray[i + 2, j + 1] = 1;
-                    minoArray[i + 1, j + 1] = 1;
-                    minoArray[i, j + 1] = 2;
-                    minoArray[i - 1, j + 1] = 1;
-                }
-            }
-        }
-    }
-
-    // Iミノの左回転
-    void IminoRotate_360_270_minoArray()
-    {
-        for (int i = 0; i < minoArray.GetLength(0); i++)
-        {
-
-            for (int j = 0; j < minoArray.GetLength(1); j++)
-            {
-
-                if (minoArray[i, j] == 2)
-                {
-                    minoArray[i, j] = 0;
-                    minoArray[i - 1, j] = 0;
-                    minoArray[i + 1, j] = 0;
-                    minoArray[i + 2, j] = 0;
-
-                    minoArray[i, j + 1] = 1;
-                    minoArray[i, j] = 1;
-                    minoArray[i, j - 1] = 2;
-                    minoArray[i, j - 2] = 1;
-                }
-            }
-        }
-    }
-    void IminoRotate_270_180_minoArray()
+    // 'Iミノ'の回転は8パターン(※回転というより、一度消して回転後の値を代入している。)
+    // 右回転(4パターン)
+    void IminoRotate_0_90(ref int[,] minoArray)
     {
         for (int i = minoArray.GetLength(0) - 1; i > 0; i--)
         {
@@ -1962,45 +1191,139 @@ public class Rotation : MonoBehaviour
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = 0;
-                    minoArray[i, j + 1] = 0;
-                    minoArray[i, j - 1] = 0;
-                    minoArray[i, j + 2] = 0;
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 2, j] = (int)FieldValue.Empty;
 
-                    minoArray[i + 2, j] = 1;
-                    minoArray[i - 1, j] = 1;
-                    minoArray[i, j] = 1;
-                    minoArray[i + 1, j] = 2;
+                    minoArray[i + 1, j + 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 1, j] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i + 1, j - 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 1, j - 2] = (int)FieldValue.MinoBlock;
                 }
             }
         }
     }
-    void IminoRotate_180_90_minoArray()
+    void IminoRotate_90_180(ref int[,] minoArray)
     {
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
 
-            for (int j = minoArray.GetLength(1) - 1; j > 0 ; j--)
+            for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = 0;
-                    minoArray[i - 2, j] = 0;
-                    minoArray[i - 1, j] = 0;
-                    minoArray[i + 1, j] = 0;
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i, j - 2] = (int)FieldValue.Empty;
 
-                    minoArray[i, j + 1] = 2;
-                    minoArray[i, j] = 1;
-                    minoArray[i, j - 1] = 1;
-                    minoArray[i, j + 2] = 1;
+                    minoArray[i - 2, j - 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 1, j - 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j - 1] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i + 1, j - 1] = (int)FieldValue.MinoBlock;
                 }
             }
         }
     }
-    void IminoRotate_90_0_minoArray()
+    void IminoRotate_180_270(ref int[,] minoArray)
+    {
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i - 2, j] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+
+                    minoArray[i - 1, j + 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 1, j] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i - 1, j - 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 1, j + 2] = (int)FieldValue.MinoBlock;
+                }
+            }
+        }
+    }
+    void IminoRotate_270_360(ref int[,] minoArray)
+    {
+        for (int i = minoArray.GetLength(0) - 1; i > 0; i--)
+        {
+
+            for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
+            {
+
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i, j + 2] = (int)FieldValue.Empty;
+                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+
+                    minoArray[i + 2, j + 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 1, j + 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j + 1] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i - 1, j + 1] = (int)FieldValue.MinoBlock;
+                }
+            }
+        }
+    }
+
+    // 左回転(4パターン)
+    void IminoRotate_360_270(ref int[,] minoArray)
+    {
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 2, j] = (int)FieldValue.Empty;
+
+                    minoArray[i, j + 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j - 1] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i, j - 2] = (int)FieldValue.MinoBlock;
+                }
+            }
+        }
+    }
+    void IminoRotate_270_180(ref int[,] minoArray)
+    {
+        for (int i = minoArray.GetLength(0) - 1; i > 0; i--)
+        {
+
+            for (int j = 0; j < minoArray.GetLength(1); j++)
+            {
+
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i, j + 2] = (int)FieldValue.Empty;
+
+                    minoArray[i + 2, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 1, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 1, j] = (int)FieldValue.MinoBlock_Axis;
+                }
+            }
+        }
+    }
+    void IminoRotate_180_90(ref int[,] minoArray)
     {
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
@@ -2008,46 +1331,67 @@ public class Rotation : MonoBehaviour
             for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
             {
 
-                if (minoArray[i, j] == 2)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = 0;
-                    minoArray[i, j + 1] = 0;
-                    minoArray[i, j - 2] = 0;
-                    minoArray[i, j - 1] = 0;
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i - 2, j] = (int)FieldValue.Empty;
+                    minoArray[i - 1, j] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j] = (int)FieldValue.Empty;
 
-                    minoArray[i - 2, j] = 1;
-                    minoArray[i + 1, j] = 1;
-                    minoArray[i, j] = 1;
-                    minoArray[i - 1, j] = 2;
+                    minoArray[i, j + 1] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j - 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j + 2] = (int)FieldValue.MinoBlock;
+                }
+            }
+        }
+    }
+    void IminoRotate_90_0(ref int[,] minoArray)
+    {
+        for (int i = 0; i < minoArray.GetLength(0); i++)
+        {
+
+            for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
+            {
+
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i, j + 1] = (int)FieldValue.Empty;
+                    minoArray[i, j - 2] = (int)FieldValue.Empty;
+                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+
+                    minoArray[i - 2, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 1, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 1, j] = (int)FieldValue.MinoBlock_Axis;
                 }
             }
         }
     }
 
-    void Rotate_field()
+    void Rotate_field(ref int[,] field, int[,] minoArray) // ここで'field'に値が代入されて画面に反映する
     {
-        // 実際には回転というより消して代入している
-        // ①fieldの中のミノを消去
         for (int i = 0; i < field.GetLength(0); i++)
         {
 
             for (int j = 0; j < field.GetLength(1); j++)
             {
 
-                if (field[i, j] == 2 || field[i,j] == 1)
+                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
-                    field[i,j] = 0;
+                    field[i, j] = (int)FieldValue.Empty;
                 }
             }
         }
-        // ②minoArrayのミノの位置情報をfieldに与える
+
         for (int i = 0; i < minoArray.GetLength(0); i++)
         {
 
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == 2 || minoArray[i, j] == 1)
+                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
                     field[i, j] = minoArray[i, j];
                 }
@@ -2055,37 +1399,19 @@ public class Rotation : MonoBehaviour
         }
     }
 
-    // 配列の初期化
-    void Initialize_All()
+    // 利用した配列の初期化
+    void Initialize_All(ref int[,] wallArray, ref int[,] minoArray, ref int[,] initialPosArray)
     {
-        for (int i = 0; i < field.GetLength(0); i++)
+        // テスト用に作った二つの配列を初期化
+        for (int i = 0; i < minoArray.GetLength(0); i++)
         {
-            for (int j = 0; j < field.GetLength(1); j++)
+            for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                fieldArray[i, j] = 0;
-                minoArray[i, j] = 0;
+                wallArray[i, j] = (int)FieldValue.Empty;
+                minoArray[i, j] = (int)FieldValue.Empty;
+                initialPosArray[i, j] = (int)FieldValue.Empty;
             }
         }
     }
-    // あると便利かと思って作ったけど下2つ使ってない
-    void Initialize_fieldArray()
-    {
-        for (int i = 0; i < field.GetLength(0); i++)
-        {
-            for (int j = 0; j < field.GetLength(1); j++)
-            {
-                fieldArray[i, j] = 0;
-            }
-        }
-    }
-    void Initialize_minoArray()
-    {
-        for (int i = 0; i < field.GetLength(0); i++)
-        {
-            for (int j = 0; j < field.GetLength(1); j++)
-            {
-                minoArray[i, j] = 0;
-            }
-        }
-    }
+
 }

@@ -5,25 +5,48 @@ using UnityEngine.UI;
 
 public class Hold : MonoBehaviour
 {
-    public GameObject gamemanager;
-    public int currentMino;
-    public int holdMino;
-
     Image m_Image;
     public Sprite[] m_Sprite;
-    // Start is called before the first frame update
-    void Start()
+
+    enum FieldValue : int
+    {
+        Empty,
+        MinoBlock,
+        MinoBlock_Axis,
+        WallBlock,
+    }
+
+    enum MinoType : int    // ミノは７種類 + Null も含め計８種類
+    {
+        T,
+        S,
+        Z,
+        L,
+        J,
+        O,
+        I,
+        Null,
+    }
+
+    void Awake()
     {
         m_Image = gameObject.GetComponent<Image>();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void HoldMino(int[,] field, ref int currentMino, ref int holdMino)
     {
-        currentMino = gamemanager.GetComponent<GameManager>().currentMino;
-        holdMino = gamemanager.GetComponent<GameManager>().holdMino;
+        for (int i = 1; i < field.GetLength(0) - 1; i++)
+        {
 
-        // スプライトを変更する処理
+            for (int j = 1; j < field.GetLength(1) - 1; j++)
+            {
+                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
+                {
+                    field[i, j] = (int)FieldValue.Empty;
+                }
+            }
+        }
+
         switch (holdMino)
         {
             case 0: // T
