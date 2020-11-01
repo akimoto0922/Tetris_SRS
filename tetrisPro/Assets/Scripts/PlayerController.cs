@@ -16,47 +16,27 @@ public class PlayerController : MonoBehaviour
     public float dropInterval = 1.0f;       // 落ちる速度
     public float time = 0;                  // deltaTimeを入れる変数
     public float time2 = 0;                 // deltaTimeを入れる変数    後で名前変える
-    public bool isActive;            // ゲーム中かどうか
+    public bool isActive;                   // ゲーム中かどうか
     public bool isGround;                   // 空中にいるかかどうか
     public bool isHold;                     // ホールド中かどうか
     public bool makeMino;                   // 次のミノを生成するかどうか
     
     // 参照するスクリプト類
-    public GameObject move;
     public GameObject render;
     public GameObject hold;
     public GameObject rotation;
     public GameObject next;
     public GameObject minoCreate;
-    public GameObject rockDown;
-    public GameObject LineClear;
-    Move Script_move;
+    public GameObject lineClear;
+    Move move = new Move();
     Render Script_render;
     Hold Script_hold;
     Rotation Script_rotation;
     Next Script_next;
     MinoCreate Script_minoCreate;
-    RockDown Script_rockDown;
+    RockDown rockDown = new RockDown();
     LineClear Script_lineClear;
 
-    // デバッグ用
-    //public int[,] field = new int[12, 22]
-    //{
-    //    { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,0,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-    //    { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
-
-    //};
-    
     enum Direction : int
     {
         Up,
@@ -82,22 +62,19 @@ public class PlayerController : MonoBehaviour
         I,
         Null,
     }
+
     void Awake()
     {
-        Script_move = move.GetComponent<Move>();
-        Script_render = render.GetComponent<Render>();
-        Script_hold = hold.GetComponent<Hold>();
-        Script_rotation = rotation.GetComponent<Rotation>();
-        Script_next = next.GetComponent<Next>();
-        Script_minoCreate = minoCreate.GetComponent<MinoCreate>();
-        Script_rockDown = rockDown.GetComponent<RockDown>();
-        Script_lineClear = LineClear.GetComponent<LineClear>();
+        // 使用するスクリプトを GetComponent する
+        GetScript();
 
+        // フレームを生成する
         Script_render.MakeFlame(field);
     }
 
     void Start()
     {
+        // 初期化
         Intialize();
     }
 
@@ -107,106 +84,14 @@ public class PlayerController : MonoBehaviour
         // ゲーム中なら操作可能
         if (isActive == true)
         {
-            // 次のミノを生成する
-            if (makeMino == true)
-            {
-                Script_next.NextChanger(ref currentMino, ref nextMino);
-                Script_minoCreate.CreateMino(field, currentMino);
-                minoDirection = (int)Direction.Up;
-                isGround = false;
-                makeMino = false;
-            }
+            // fieldに次のミノを生成する
+            MakeMino();
 
-            // 右移動
-            if (Input.GetKeyDown(KeyCode.D))
-            {
-                time2 = 0;
-                if (isGround == true)
-                {
-                    setCount++;
-                }
-                Script_move.MoveMino(field, 1, 0, ref isGround);
-            }
+            // プレイヤーの入力処理
+            Hold();     // Q           ホールド…現在のミノをストックし、必要な時に取り出すことができる
+            Move();     // W, A, S, D　ミノの移動
+            Rotate();   // ←, →　    ミノの回転
 
-            // 左移動
-            if (Input.GetKeyDown(KeyCode.A))
-            {
-                time2 = 0;
-                if (isGround == true)
-                {
-                    setCount++;
-                }
-                Script_move.MoveMino(field, -1, 0, ref isGround);
-            }
-
-            // 右回転
-            if (Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                time2 = 0;
-                if (isGround == true)
-                {
-                    setCount++;
-                }
-                Script_rotation.RightSpin(ref field, currentMino, ref minoDirection);
-            }
-
-            // 左回転
-            if (Input.GetKeyDown(KeyCode.LeftArrow))
-            {
-                time2 = 0;
-                if (isGround == true)
-                {
-                    setCount++;
-                }
-                Script_rotation.LeftSpin(ref field, currentMino, ref minoDirection);
-            }
-
-            // ソフトドロップ
-            if (Input.GetKey(KeyCode.S))
-            {
-                Script_move.MoveMino(field, 0, -1, ref isGround);
-                time2 = 0;
-            }
-
-            // ハードドロップ
-            if (Input.GetKeyDown(KeyCode.W))
-            {
-                for (int i = 0; i < 20; i++)
-                {
-                    Script_move.MoveMino(field, 0, -1, ref isGround);
-                }
-                time = 0;
-                time2 = 0;
-                Script_rockDown.SetMino(field);
-                for (int i = 0; i < 20; i++)
-                {
-                    Script_lineClear.LineDelete(field, ref score);
-                }
-                setCount = 0;
-
-                makeMino = true;
-                isHold = false;
-            }
-
-            // ホールド
-            if (Input.GetKeyDown(KeyCode.Q) && isHold == false)
-            {
-                if (holdMino == (int)MinoType.Null) // ホールドしてるミノがないとき
-                {
-                    holdMino = currentMino;
-                    Script_hold.HoldMino(field, ref currentMino, ref holdMino);
-                    makeMino = true;
-                }
-                else
-                {
-                    int createNum = holdMino;
-                    holdMino = currentMino;
-                    currentMino = createNum;
-                    Script_hold.HoldMino(field, ref currentMino, ref holdMino);
-                    Script_minoCreate.CreateMino(field, currentMino);
-                }
-                isHold = true;
-            }
         }
 
         // ゲームオーバー
@@ -227,7 +112,7 @@ public class PlayerController : MonoBehaviour
         time += Time.deltaTime;
         if (time >= dropInterval)
         {
-            Script_move.MoveMino(field, 0, -1, ref isGround);
+            move.MoveMino(field, 0, -1, ref isGround);
             time = 0;
         }
 
@@ -236,8 +121,11 @@ public class PlayerController : MonoBehaviour
         {
             if (isGround == true)
             {
-                Script_rockDown.SetMino(field);
-                Script_lineClear.LineDelete(field, ref score);
+                rockDown.SetMino(field);
+                for (int i = 0; i < 20; i++)
+                {
+                    Script_lineClear.LineDelete(field, ref score);
+                }
                 setCount = 0;
                 makeMino = true;
                 isGround = false;
@@ -250,32 +138,152 @@ public class PlayerController : MonoBehaviour
             time2 += Time.deltaTime;
             if (time2 >= setLimit)
             {
-                Script_rockDown.SetMino(field);
+                rockDown.SetMino(field);
                 setCount = 0;
-                Script_lineClear.LineDelete(field, ref score);
+                for (int i = 0; i < 20; i++)
+                {
+                    Script_lineClear.LineDelete(field, ref score);
+                }
                 makeMino = true;
                 time2 = 0;
                 isGround = false;
                 isHold = false;
             }
         }
-
     }
-
-    public void Intialize()
+    private void MakeMino()
     {
+        if (makeMino == true)
+        {
+            Script_next.NextChanger(ref currentMino, ref nextMino);
+            Script_minoCreate.CreateMino(field, currentMino);
+            minoDirection = (int)Direction.Up;
+            isGround = false;
+            makeMino = false;
+        }
+    }
+    private void Hold()
+    {
+        if (Input.GetKeyDown(KeyCode.Q) && isHold == false)
+        {
+            if (holdMino == (int)MinoType.Null) // ホールドしてるミノがないとき
+            {
+                holdMino = currentMino;
+                Script_hold.HoldMino(field, ref currentMino, ref holdMino);
+                makeMino = true;
+            }
+            else
+            {
+                int createNum = holdMino;
+                holdMino = currentMino;
+                currentMino = createNum;
+                Script_hold.HoldMino(field, ref currentMino, ref holdMino);
+                Script_minoCreate.CreateMino(field, currentMino);
+            }
+            isHold = true;
+        }
+    }
+    private void Move()
+    {
+        // 右移動
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            time2 = 0;
+            if (isGround == true)
+            {
+                setCount++;
+            }
+            move.MoveMino(field, 1, 0, ref isGround);
+        }
+
+        // 左移動
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            time2 = 0;
+            if (isGround == true)
+            {
+                setCount++;
+            }
+            move.MoveMino(field, -1, 0, ref isGround);
+        }
+
+        // 下移動（ソフトドロップ）
+        if (Input.GetKey(KeyCode.S))
+        {
+            move.MoveMino(field, 0, -1, ref isGround);
+            time2 = 0;
+        }
+
+        // 高速落下、ミノの設置までする（ハードドロップ）
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                move.MoveMino(field, 0, -1, ref isGround);
+            }
+            time = 0;
+            time2 = 0;
+            rockDown.SetMino(field);
+            for (int i = 0; i < 20; i++)
+            {
+                Script_lineClear.LineDelete(field, ref score);
+            }
+            setCount = 0;
+
+            makeMino = true;
+            isHold = false;
+        }
+    }
+    private void Rotate()
+    {
+        // 右回転
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            time2 = 0;
+            if (isGround == true)
+            {
+                setCount++;
+            }
+            Script_rotation.RightSpin(ref field, currentMino, ref minoDirection);
+        }
+
+        // 左回転
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            time2 = 0;
+            if (isGround == true)
+            {
+                setCount++;
+            }
+            Script_rotation.LeftSpin(ref field, currentMino, ref minoDirection);
+        }
+    }
+    private void GetScript()
+    {
+        
+        Script_render = render.GetComponent<Render>();
+        Script_hold = hold.GetComponent<Hold>();
+        Script_rotation = rotation.GetComponent<Rotation>();
+        Script_next = next.GetComponent<Next>();
+        Script_minoCreate = minoCreate.GetComponent<MinoCreate>();
+        Script_lineClear = lineClear.GetComponent<LineClear>();
+    }
+    private void Intialize()
+    {
+        // field を初期化
         for (int i = 1; i < field.GetLength(0) - 1; i++)
         {
-            for (int j = 1; j < field.GetLength(1) - 1; j++)
+            for (int j = 1; j < field.GetLength(1); j++)
             {
                 field[i, j] = (int)FieldValue.Empty;
             }
         }
-        score = 0;
-        isActive = true;
-        minoDirection = (int)Direction.Up;
-        holdMino = (int)MinoType.Null;
-        isHold = false;
-        makeMino = true;
+        score = 0;                          // スコア
+        isActive = true;                    // 操作可能かどうか
+        minoDirection = (int)Direction.Up;  // ミノの向き
+        holdMino = (int)MinoType.Null;      // ホールド中のミノ
+        isHold = false;                     // ホールド可能かどうか
+        makeMino = true;                    // 次のミノを生成
+
     }
 }

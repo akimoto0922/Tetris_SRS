@@ -6,9 +6,18 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Title.unity
+    guid: a220c3c1819016342950d81d341731a0
+  - enabled: 1
     path: Assets/Scenes/Menu.unity
     guid: 72de70c71a7b74b40b3dd7f6a1c77f4d
   - enabled: 1
-    path: Assets/Scenes/play.unity
+    path: Assets/Scenes/40Line.unity
     guid: 77056b4a13285af4eb55d3ce6dcf34ef
+  - enabled: 1
+    path: Assets/naichilab/unity-simple-ranking/Scenes/Ranking.unity
+    guid: 152244f5855414ac4a3874f14efa583c
+  - enabled: 1
+    path: Assets/Scenes/BattleScene.unity
+    guid: 7303a6432a717794ba8cddbb5984c765
   m_configObjects: {}

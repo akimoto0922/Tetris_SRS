@@ -9,8 +9,8 @@ public class ScoreManager : MonoBehaviour
     public Text scoreText;
     public Text highScoreText;
 
-    public int score;
-    public int highScore;
+    int score;
+    int highScore;
 
     // Start is called before the first frame update
     void Start()
@@ -22,15 +22,14 @@ public class ScoreManager : MonoBehaviour
     void Update()
     {
         score = PlayerController.GetComponent<PlayerController>().score;
-
+        // 最高記録入れ替え
         if (highScore < score)
         {
             highScore = score;
         }
 
-        // スコア・ハイスコアを表示する
+        // スコアを text に表示する
         scoreText.text = score.ToString();
         highScoreText.text = highScore.ToString();
-
     }
 }

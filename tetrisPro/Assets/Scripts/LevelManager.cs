@@ -1,32 +1,23 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class LevelManager : MonoBehaviour
 {
     public GameObject Player;
     public GameObject GameClearWindow;
     public GameObject GameOverWindow;
-
-    Vector3 playerPos;
+    public GameObject ResultWindow;
 
     int score;
     bool makeMino;
     bool isActive;
     int[,] field = new int[12, 22];
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        playerPos = Player.transform.position;
-    }
-
     // Update is called once per frame
     void Update()
     {
-        playerPos = Player.transform.position;
-
-
         score = Player.GetComponent<PlayerController>().score;
         makeMino = Player.GetComponent<PlayerController>().makeMino;
         isActive = Player.GetComponent<PlayerController>().isActive;
@@ -62,22 +53,6 @@ public class LevelManager : MonoBehaviour
                     field[i, j] = ClearMino;
                 }
             }
-
-            playerPos.x = 19;
-            playerPos.y = 14;
-            Player.transform.position = playerPos;
-        }
-        else if (4000 > score && score >= 2000)
-        {
-            playerPos.x = 25;
-            playerPos.y = 8;
-            Player.transform.position = playerPos;
-        }
-        else
-        {
-            playerPos.x = 20;
-            playerPos.y = 1;
-            Player.transform.position = playerPos;
         }
     }
 }

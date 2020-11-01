@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Move : MonoBehaviour
+public class Move
 {
     bool canMove;   // 移動可能かどうか
 
@@ -28,7 +28,7 @@ public class Move : MonoBehaviour
 
                 for (int j = 0; j < field.GetLength(1); j++)
                 {
-                    array[i, j] = 0;
+                    array[i, j] = (int) FieldValue.Empty;
                 }
 
             }
@@ -63,7 +63,8 @@ public class Move : MonoBehaviour
         }
     }
 
-    void CheckWall(int[,] field, int x, int y, ref bool isGround)
+    // 動かす方向に壁があるかチェックする、下方向をチェックした場合は isGround（地面にあるかどうか）の値も返す。
+    private void CheckWall(int[,] field, int x, int y, ref bool isGround)
     {
         for (int i = 0; i < field.GetLength(0); i++)
         {

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using UnityEngine;
 
 public class Rotation : MonoBehaviour
-{
+{   
     int[,] minoArray = new int[12, 22];
     int[,] wallArray = new int[12, 22];
     int[,] initialPosArray = new int[12, 22];
@@ -142,14 +142,6 @@ public class Rotation : MonoBehaviour
         }
     }
 
-    //　＜テストの手順＞
-    // ①現在のfieldのミノの位置と壁の位置をそれぞれ別の配列にコピー。(minoArray,fieldArray)
-    // ②minoArrayでミノを回転させる
-    // ③minoArrayとfieldArrayを比較し、ミノの位置がfieldArrayですべて空白のブロックなら成功。
-    // ④失敗したら、ミノの位置を強制的に動かしもう一度比較する、これを5回繰り返しすべてに失敗したら回転はできない。
-    //
-    // wiki参考 https://tetris.wiki/Super_Rotation_System
-
     // 右回転のテスト
     void Test_0_90(ref int[,] field, ref int minoDirection)
     {
@@ -163,34 +155,32 @@ public class Rotation : MonoBehaviour
         // テスト開始
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
-                    UnityEngine.Debug.Log("1回目");
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, 0);
+
                     break;
 
                 case 1:
-                    UnityEngine.Debug.Log("2回目");
-                    Respown(ref minoArray, initialPosArray);
+
                     ForcedMoveMino(ref minoArray, -1, 0);
                     break;
 
                 case 2:
-                    UnityEngine.Debug.Log("3回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, -1, 1);
                     break;
 
                 case 3:
-                    UnityEngine.Debug.Log("4回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 0, -2);
                     break;
 
                 case 4:
-                    UnityEngine.Debug.Log("5回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, -1, -2);
                     break;
@@ -222,31 +212,32 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
-                    UnityEngine.Debug.Log("1回目");
+
                     break;
 
                 case 1:
-                    UnityEngine.Debug.Log("2回目");
+
                     ForcedMoveMino(ref minoArray, 1, 0);
                     break;
 
                 case 2:
-                    UnityEngine.Debug.Log("3回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 1, -1);
                     break;
 
                 case 3:
-                    UnityEngine.Debug.Log("4回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 0, 2);
                     break;
 
                 case 4:
-                    UnityEngine.Debug.Log("5回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 1, 2);
                     break;
@@ -273,6 +264,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -320,6 +312,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -369,6 +362,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -416,6 +410,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -463,6 +458,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -510,6 +506,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -559,34 +556,32 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
-                    UnityEngine.Debug.Log("1回目");
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, 0);
+
                     break;
 
                 case 1:
-                    UnityEngine.Debug.Log("2回目");
-                    Respown(ref minoArray, initialPosArray);
+
                     ForcedMoveMino(ref minoArray, -2, 0);
                     break;
 
                 case 2:
-                    UnityEngine.Debug.Log("3回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 1, 0);
                     break;
 
                 case 3:
-                    UnityEngine.Debug.Log("4回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, -2, -1);
                     break;
 
                 case 4:
-                    UnityEngine.Debug.Log("5回目");
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 1, 2);
                     break;
@@ -613,6 +608,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -620,20 +616,24 @@ public class Rotation : MonoBehaviour
                     break;
 
                 case 1:
+
                     ForcedMoveMino(ref minoArray, -1, 0);
                     break;
 
                 case 2:
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 2, 0);
                     break;
 
                 case 3:
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, -1, 2);
                     break;
 
                 case 4:
+
                     Respown(ref minoArray, initialPosArray);
                     ForcedMoveMino(ref minoArray, 2, -1);
                     break;
@@ -660,6 +660,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -707,6 +708,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -756,6 +758,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -803,6 +806,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -850,6 +854,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -897,6 +902,7 @@ public class Rotation : MonoBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            UnityEngine.Debug.Log(i + 1 + "回目");
             switch (i)
             {
                 case 0:
@@ -937,6 +943,9 @@ public class Rotation : MonoBehaviour
         UnityEngine.Debug.Log("回転できない。");
     }
 
+
+
+    // テストで使う関数
     // <ミノの強制移動>
     void ForcedMoveMino(ref int[,] minoArray, int minoPos_x, int minoPos_y)
     {
@@ -952,9 +961,8 @@ public class Rotation : MonoBehaviour
                     // 範囲外処理
                     var x = i + minoPos_x;
                     var y = j + minoPos_y;
-                    if (x >= minoArray.GetLength(0) || 0 >= x || j >= minoArray.GetLength(1) || 0 >= j)
+                    if (x >= minoArray.GetLength(0) || 0 >= x || y >= minoArray.GetLength(1) || 0 >= y)
                     {
-                        UnityEngine.Debug.Log("あばっばばばばばばばば");
                         return;
                     }
                     copyArray[i + minoPos_x, j + minoPos_y] = minoArray[i, j];
@@ -1035,7 +1043,6 @@ public class Rotation : MonoBehaviour
             }
         }
     }
-
 
     // <比較>
     void Compare(int[,] minoArray, int[,] wallArray)
@@ -1225,6 +1232,7 @@ public class Rotation : MonoBehaviour
                     minoArray[i - 1, j - 1] = (int)FieldValue.MinoBlock;
                     minoArray[i, j - 1] = (int)FieldValue.MinoBlock_Axis;
                     minoArray[i + 1, j - 1] = (int)FieldValue.MinoBlock;
+
                 }
             }
         }

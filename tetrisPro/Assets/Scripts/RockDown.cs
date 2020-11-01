@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class RockDown : MonoBehaviour
+﻿public class RockDown
 {
     enum FieldValue : int
     {
@@ -11,19 +7,8 @@ public class RockDown : MonoBehaviour
         MinoBlock_Axis,
         WallBlock,
     }
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-       
-
-    }
-
+    
+    // アクティブなミノを固定されたミノに変換する
     public void SetMino(int[,] field)
     {
         for (int i = 0; i < field.GetLength(0); i++)

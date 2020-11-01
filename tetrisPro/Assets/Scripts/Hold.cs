@@ -37,9 +37,9 @@ public class Hold : MonoBehaviour
     {
         for (int i = 1; i < field.GetLength(0) - 1; i++)
         {
-
             for (int j = 1; j < field.GetLength(1) - 1; j++)
             {
+                // fieldにある
                 if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
                 {
                     field[i, j] = (int)FieldValue.Empty;
@@ -47,55 +47,7 @@ public class Hold : MonoBehaviour
             }
         }
 
-        switch (holdMino)
-        {
-            case 0: // T
-
-                m_Image.sprite = m_Sprite[0];
-
-                break;
-
-            case 1: // S
-
-                m_Image.sprite = m_Sprite[1];
-
-                break;
-
-            case 2: // Z
-
-                m_Image.sprite = m_Sprite[2];
-
-                break;
-
-            case 3: // L
-
-                m_Image.sprite = m_Sprite[3];
-
-                break;
-
-            case 4: // J
-
-                m_Image.sprite = m_Sprite[4];
-
-                break;
-
-            case 5: // O
-
-                m_Image.sprite = m_Sprite[5];
-
-                break;
-
-            case 6: // I
-
-                m_Image.sprite = m_Sprite[6];
-
-                break;
-
-            case 7: // Null
-
-                m_Image.sprite = m_Sprite[7];
-
-                break;
-        }
+        // ホールドの画像を入れ替える
+        m_Image.sprite = m_Sprite[holdMino];
     }
 }

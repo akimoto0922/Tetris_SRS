@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class LineClear : MonoBehaviour
 {
+    public GameObject EffectBlock; 
     enum FieldValue : int
     {
         Empty,
@@ -11,7 +13,7 @@ public class LineClear : MonoBehaviour
         MinoBlock_Axis,
         WallBlock,
     }
-    
+
     public void LineDelete(int[,]field, ref int score)
     {
         for (int i = 1; i < field.GetLength(1) - 1; i++)
@@ -32,6 +34,7 @@ public class LineClear : MonoBehaviour
                     {
                         score += 10;
                         field[k, i] = (int)FieldValue.Empty;
+                        Instantiate(EffectBlock, new Vector3(k, i, 0), Quaternion.identity);
                     }
                     LineShift(field);
                 }
