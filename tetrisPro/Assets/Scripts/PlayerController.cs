@@ -24,18 +24,18 @@ public class PlayerController : MonoBehaviour
     // 参照するスクリプト類
     public GameObject render;
     public GameObject hold;
-    public GameObject rotation;
     public GameObject next;
     public GameObject minoCreate;
     public GameObject lineClear;
-    Move move = new Move();
+    
     Render Script_render;
     Hold Script_hold;
-    Rotation Script_rotation;
     Next Script_next;
     MinoCreate Script_minoCreate;
-    RockDown rockDown = new RockDown();
     LineClear Script_lineClear;
+    Move move = new Move();
+    Rotation rotation = new Rotation();
+    RockDown rockDown = new RockDown();
 
     enum Direction : int
     {
@@ -244,7 +244,7 @@ public class PlayerController : MonoBehaviour
             {
                 setCount++;
             }
-            Script_rotation.RightSpin(ref field, currentMino, ref minoDirection);
+            rotation.RightSpin(ref field, currentMino, ref minoDirection);
         }
 
         // 左回転
@@ -255,15 +255,13 @@ public class PlayerController : MonoBehaviour
             {
                 setCount++;
             }
-            Script_rotation.LeftSpin(ref field, currentMino, ref minoDirection);
+            rotation.LeftSpin(ref field, currentMino, ref minoDirection);
         }
     }
     private void GetScript()
     {
-        
         Script_render = render.GetComponent<Render>();
         Script_hold = hold.GetComponent<Hold>();
-        Script_rotation = rotation.GetComponent<Rotation>();
         Script_next = next.GetComponent<Next>();
         Script_minoCreate = minoCreate.GetComponent<MinoCreate>();
         Script_lineClear = lineClear.GetComponent<LineClear>();

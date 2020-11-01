@@ -1,30 +1,27 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using UnityEngine;
-
-public class Rotation : MonoBehaviour
+﻿/*
+ *＜テストの方法＞
+ * 1.field からミノの位置(minoArray)と壁の位置(wallArray)をそれぞれ違う配列にコピーする
+ * 2.minoArrayのミノを回転させる
+ * 3.minoArray のミノの位置を指定した座標に動かす（最初はその場で、2回目から座標をずらす）(https://tetris.wiki/Super_Rotation_System 動かす座標の表はこのサイトを参考)
+ * 4.minoArray と wallArray を比較し、minoArray のミノの位置に wallArry で壁があるかどうか調べる。4つのブロックがすべて空の部分にあるなら回転成功
+ * 5.minoArray のミノの位置を field に反映させる。
+ * 6.最後にテストで使った配列を初期化して終わり。
+*/
+public class Rotation
 {   
-    int[,] minoArray = new int[12, 22];
-    int[,] wallArray = new int[12, 22];
-    int[,] initialPosArray = new int[12, 22];
-    int[,] array_mino_test = new int[4, 4];
+    int[,] minoArray = new int[12, 22];         // field のミノ(アクティブなブロック)を格納するための配列
+    int[,] wallArray = new int[12, 22];         // field の壁（固定されたブロック）を格納するための配列
+    int[,] initialPosArray = new int[12, 22];   // テストを開始した時のミノ（アクティブなブロック）の初期位置を格納するための配列
+    int[,] array_mino_test = new int[4, 4];     // 回転させるときに仮置きするための配列　←　今書いてて、グローバルじゃなくていい気がした。
 
-    bool canRotate;
+    bool canRotate;     // 回転可能かどうか
+
     enum FieldValue : int
     {
-        Empty,
-        MinoBlock,
-        MinoBlock_Axis,
-        WallBlock,
-    }
-
-    enum MinoAngle : int
-    {
-        _0,
-        _90,
-        _180,
-        _270
+        Empty,          // 空の部分
+        MinoBlock,      // ミノブロック
+        MinoBlock_Axis, // ミノの回転軸
+        WallBlock,      // 固定されたブロック
     }
 
     enum MinoType : int    // ミノは７種類 + Null も含め計8種類
@@ -141,6 +138,14 @@ public class Rotation : MonoBehaviour
             }
         }
     }
+
+    /* memo1
+     * minoDirection はそのうち enum でしっかり書く。
+     * 0 → Up       生成されたときの初期位置
+     * 1 → Right
+     * 2 → Down
+     * 3 → Left
+    */
 
     // 右回転のテスト
     void Test_0_90(ref int[,] field, ref int minoDirection)
