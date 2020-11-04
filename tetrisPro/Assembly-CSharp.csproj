@@ -63,10 +63,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\BattleScene\Player.cs" />
-    <Compile Include="Assets\Scripts\BattleScene\TestBattle.cs" />
-    <Compile Include="Assets\Scripts\BattleScene\TestPlayerController.cs" />
-    <Compile Include="Assets\Scripts\BattleScene\TestRender.cs" />
     <Compile Include="Assets\Scripts\BlockEffect.cs" />
     <Compile Include="Assets\Scripts\ButtonManager.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
@@ -81,8 +77,7 @@
     <Compile Include="Assets\Scripts\RockDown.cs" />
     <Compile Include="Assets\Scripts\Rotation.cs" />
     <Compile Include="Assets\Scripts\ScoreManager.cs" />
-    <Compile Include="Assets\Scripts\Testa.cs" />
-    <Compile Include="Assets\Scripts\TestB.cs" />
+    <Compile Include="Assets\Scripts\WallKickData.cs" />
     <Reference Include="Unity.TextMeshPro.Editor">
       <HintPath>D:/game_tetris/tetrisPro/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>

@@ -9,22 +9,13 @@
 */
 public class Rotation
 {   
-    int[,] minoArray = new int[12, 22];         // field のミノ(アクティブなブロック)を格納するための配列
+    int[,] fieldArray = new int[12, 22];         // field のミノ(アクティブなブロック)を格納するための配列
     int[,] wallArray = new int[12, 22];         // field の壁（固定されたブロック）を格納するための配列
     int[,] initialPosArray = new int[12, 22];   // テストを開始した時のミノ（アクティブなブロック）の初期位置を格納するための配列
     int[,] array_mino_test = new int[4, 4];     // 回転させるときに仮置きするための配列　←　今書いてて、グローバルじゃなくていい気がした。
 
-    bool canRotate;     // 回転可能かどうか
-
-    enum FieldValue : int
-    {
-        Empty,          // 空の部分
-        MinoBlock,      // ミノブロック
-        MinoBlock_Axis, // ミノの回転軸
-        WallBlock,      // 固定されたブロック
-    }
-
-    enum MinoType : int    // ミノは７種類 + Null も含め計8種類
+    //------------------------------------------------------------------------------------------------------------------------------------------------
+    public enum eMinoType : int    // ミノは７種類 + Null も含め計8種類
     {
         T,
         S,
@@ -33,33 +24,216 @@ public class Rotation
         J,
         O,
         I,
-        Null,
+        MAX
     }
+
+    public enum eMinoAngle : int
+    {
+        ang0,
+        ang90,
+        ang180,
+        ang270
+    }
+
+    public enum eFieldValue : int
+    {
+        Empty,          // 空の部分
+        MinoBlock,      // ミノブロック
+        WallBlock,      // 固定されたブロック
+    }
+
+    // ミノの配列のサイズ
+    public const int MINO_SIZE = 9;
+    // ミノの辺の長さ
+    public const int MINO_SIDE_LENGTH = 3;
+
+    // ミノの配列
+    public readonly int[,] minoArrays = new int[(int)eMinoType.MAX - 2, MINO_SIZE] // Oミノは回転しない、Iミノは特殊な回転のため -2している
+    {
+        // T
+        {
+          0,1,0,
+          1,1,1,
+          0,0,0,
+        },
+        // S
+        {
+          0,1,1,
+          1,1,0,
+          0,0,0,
+        },
+        // Z
+        {
+          1,1,0,
+          0,1,1,
+          0,0,0,
+        },
+        // L
+        {
+          0,0,1,
+          1,1,1,
+          0,0,0,
+        },
+        // J
+        {
+          1,0,0,
+          1,1,1,
+          0,0,0,
+        }
+    };
+
+    /// <summary>
+    /// Iミノのみ特殊であるため、別で宣言
+    /// </summary>
+
+    // ミノの配列のサイズ
+    public const int I_MINO_SIZE = 16;
+    // ミノの辺の長さ
+    public const int I_MINO_SIDE_LENGTH = 4;
+
+    readonly int[] iMinoArray = new int[I_MINO_SIZE]
+    {
+          0,1,0,0,
+          0,1,0,0,
+          0,1,0,0,
+          0,1,0,0,
+    };
+
+
+
+
+    // ミノのタイプ、ミノの向きをもらって、配列の値を返す
+    public void RotatedMino(ref int[] minoArray, eMinoType currentMino, eMinoAngle minoAngle)
+    {
+        int[] copyArray;
+
+        // Oミノは回転しない
+        if (currentMino == eMinoType.O)
+        {
+            return;
+        }
+        else
+        {
+            Rotate(out copyArray, currentMino, minoAngle);
+
+            // 壁と被らないかチェック canRotate
+
+            // No
+            if (!WallCheck())
+            {
+                // SRSを利用
+                // 5回テストをして失敗の場合 canSuperRotation
+                if (!SuperRotation())
+                {
+                    return;
+                }
+            }
+
+        }
+
+        // 回転後の配列の値を代入
+        for (int i = 0; i < minoArray.Length; i++)
+        {
+            minoArray[i] = copyArray[i];
+        }
+
+    }
+
+    // ミノを回転させる
+    void Rotate(out int[] res, eMinoType type, eMinoAngle angle)
+    {
+        int t = (int)type;
+        int size, sideLength;
+
+        // Iミノのみ特殊 
+        if (type == eMinoType.I)
+        {
+            size = I_MINO_SIZE;
+            sideLength = I_MINO_SIDE_LENGTH;
+
+            res = new int[size];
+
+            for (int i = 0; i < size; ++i)
+            {
+                int x, y;
+                x = i % sideLength;
+                y = i / sideLength;
+
+                res[i] = iMinoArray[GetRotatedIndex(x, y, angle, sideLength)];
+            }
+        }
+        else
+        {
+            size = MINO_SIZE;
+            sideLength = MINO_SIDE_LENGTH;
+
+            res = new int[size];
+
+            for (int i = 0; i < size; ++i)
+            {
+                int x, y;
+                x = i % sideLength;
+                y = i / sideLength;
+
+                res[i] = minoArrays[t, GetRotatedIndex(x, y, angle, sideLength)];
+            }
+        }
+    }
+
+    // 回転時の添え字を取得する（Rotate関数内で使用）
+    int GetRotatedIndex(int x, int y, eMinoAngle angle, int side)
+    {
+        switch (angle)
+        {
+            case eMinoAngle.ang0:   return x + (side * y);
+            case eMinoAngle.ang90:  return (side * (side - 1)) - (side * x) + y;
+            case eMinoAngle.ang180: return ((side * side) - 1) - x - (side * y);
+            case eMinoAngle.ang270: return (side - 1) + (side * x) - y;
+            default:              return -1;
+        }
+    }
+
+    // 壁と重なってないかチェック
+    bool WallCheck()
+    {
+        bool canRotate = true;
+        return canRotate;
+    }
+
+    // SRS
+    bool SuperRotation()
+    {
+        bool canSuperRotation = true;
+        return canSuperRotation;
+    }
+    //------------------------------------------------------------------------------------------------------------------------------------------------
+    /*
+    bool canRotate;     // 回転可能かどうか
 
     public void RightSpin(ref int[,] field, int currentMino, ref int minoDirection)
     {
-        if (currentMino == (int)MinoType.O)
+        if (currentMino == (int)eMinoType.O)
         {
             // O(オー)ミノは回転しないのでテストは行わない。
             return;
         }
-        else if (currentMino == (int)MinoType.I) // Iミノ
+        else if (currentMino == (int)eMinoType.I) // Iミノ
         {
             switch (minoDirection)
             {
-                case 0:
+                case (int)eMinoAngle.ang0:
                     IminoTest_0_90(ref field, ref minoDirection);
                     break;
 
-                case 1:
+                case (int)eMinoAngle.ang90:
                     IminoTest_90_180(ref field, ref minoDirection);
                     break;
 
-                case 2:
+                case (int)eMinoAngle.ang180:
                     IminoTest_180_270(ref field, ref minoDirection);
                     break;
 
-                case 3:
+                case (int)eMinoAngle.ang270:
                     IminoTest_270_360(ref field, ref minoDirection);
                     break;
             }
@@ -68,20 +242,17 @@ public class Rotation
         {
             switch (minoDirection)
             {
-                case 0:
-                    Test_0_90(ref field, ref minoDirection);
+                case (int)eMinoAngle.ang0:
+                    //Test_0_90(ref field, ref minoDirection);
                     break;
-
-                case 1:
-                    Test_90_180(ref field, ref minoDirection);
+                case (int)eMinoAngle.ang90:
+                    //Test_90_180(ref field, ref minoDirection);
                     break;
-
-                case 2:
-                    Test_180_270(ref field, ref minoDirection);
+                case (int)eMinoAngle.ang180:
+                    //Test_180_270(ref field, ref minoDirection);
                     break;
-
-                case 3:
-                    Test_270_360(ref field, ref minoDirection);
+                case (int)eMinoAngle.ang270:
+                    //Test_270_360(ref field, ref minoDirection);
                     break;
             }
         }
@@ -89,12 +260,12 @@ public class Rotation
 
     public void LeftSpin(ref int[,] field, int currentMino, ref int minoDirection)
     {
-        if (currentMino == (int)MinoType.O)
+        if (currentMino == (int)eMinoType.O)
         {
             // O(オー)ミノは回転しないのでテストは行わない。
             return;
         }
-        else if (currentMino == (int)MinoType.I)  // Iミノ
+        else if (currentMino == (int)eMinoType.I)  // Iミノ
         {
             switch (minoDirection)
             {
@@ -139,24 +310,24 @@ public class Rotation
         }
     }
 
-    /* memo1
-     * minoDirection はそのうち enum でしっかり書く。
-     * 0 → Up       生成されたときの初期位置
-     * 1 → Right
-     * 2 → Down
-     * 3 → Left
-    */
+     //memo1
+     //minoDirection はそのうち enum でしっかり書く。
+     //0 → Up       生成されたときの初期位置
+     //1 → Right
+     //2 → Down
+     //3 → Left
+    
 
     // 右回転のテスト
     void Test_0_90(ref int[,] field, ref int minoDirection)
     {
         // 配列をコピー
-        Copy(field, ref minoArray, ref wallArray);
+        Copy(field, ref fieldArray, ref wallArray);
 
         // 回転させる
-        RotateRight(ref minoArray);
+        RotateRight(ref fieldArray);
 
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
         // テスト開始
         for (int i = 0; i < 5; i++)
         {
@@ -169,51 +340,51 @@ public class Rotation
 
                 case 1:
 
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 2:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 1);
                     break;
 
                 case 3:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, -2);
                     break;
 
                 case 4:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, -2);
                     break;
             }
             // 配列を比較
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             // 成功なら
             if (canRotate == true)
             {
                 minoDirection = 1;
                 // fieldのミノを回転させて描画
-                Rotate_field(ref field, minoArray);
+                Rotate_field(ref field, fieldArray);
                 // コピーした配列の初期化
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
         // すべて失敗したら
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void Test_90_180(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateRight(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateRight(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -226,46 +397,46 @@ public class Rotation
 
                 case 1:
 
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 2:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, -1);
                     break;
 
                 case 3:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, 2);
                     break;
 
                 case 4:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 2;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void Test_180_270(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateRight(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateRight(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -277,43 +448,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 1);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, -2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, -2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 3;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void Test_270_360(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateRight(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateRight(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -325,45 +496,45 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, -1);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, 2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 0;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
 
     // 左回転のテスト
     void Test_360_270(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateLeft(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateLeft(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -375,43 +546,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 1);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, -2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, -2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 3;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void Test_270_180(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateLeft(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateLeft(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -423,43 +594,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, -1);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, 2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 2;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void Test_180_90(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateLeft(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateLeft(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -471,43 +642,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 1);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, -2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, -2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 1;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void Test_90_0(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        RotateLeft(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        RotateLeft(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -519,45 +690,45 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, -1);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 0, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 0, 2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 0;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
 
     // Iミノのテスト 右回転
     void IminoTest_0_90(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_0_90(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_0_90(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -570,46 +741,46 @@ public class Rotation
 
                 case 1:
 
-                    ForcedMoveMino(ref minoArray, -2, 0);
+                    ForcedMoveMino(ref fieldArray, -2, 0);
                     break;
 
                 case 2:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 3:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -2, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -2, -1);
                     break;
 
                 case 4:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 1;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void IminoTest_90_180(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_90_180(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_90_180(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -622,46 +793,46 @@ public class Rotation
 
                 case 1:
 
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 2:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 2, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 2, 0);
                     break;
 
                 case 3:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 2);
                     break;
 
                 case 4:
 
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 2, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 2, -1);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 2;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void IminoTest_180_270(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_180_270(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_180_270(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -673,43 +844,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 2, 0);
+                    ForcedMoveMino(ref fieldArray, 2, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 2, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 2, 1);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, -2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 3;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void IminoTest_270_360(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_270_360(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_270_360(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -721,45 +892,45 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -2, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -2, 0);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, -2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -2, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -2, 1);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 0;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
 
     // Iミノのテスト 左回転
     void IminoTest_360_270(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_360_270(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_360_270(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -771,43 +942,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 2, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 2, 0);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 2, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 2, -1);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 3;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void IminoTest_270_180(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_270_180(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_270_180(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -819,43 +990,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, -2, 0);
+                    ForcedMoveMino(ref fieldArray, -2, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -2, -1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -2, -1);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, 2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, 2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 2;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void IminoTest_180_90(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_180_90(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_180_90(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -867,43 +1038,43 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 1, 0);
+                    ForcedMoveMino(ref fieldArray, 1, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -2, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -2, 0);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 1, -2);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -2, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -2, 1);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 1;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
     void IminoTest_90_0(ref int[,] field, ref int minoDirection)
     {
-        Copy(field, ref minoArray, ref wallArray);
-        IminoRotate_90_0(ref minoArray);
-        Copy_RespownPos(minoArray, ref initialPosArray);
+        Copy(field, ref fieldArray, ref wallArray);
+        IminoRotate_90_0(ref fieldArray);
+        Copy_RespownPos(fieldArray, ref initialPosArray);
 
         for (int i = 0; i < 5; i++)
         {
@@ -915,36 +1086,36 @@ public class Rotation
                     break;
 
                 case 1:
-                    ForcedMoveMino(ref minoArray, 2, 0);
+                    ForcedMoveMino(ref fieldArray, 2, 0);
                     break;
 
                 case 2:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, 0);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, 0);
                     break;
 
                 case 3:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, 2, 1);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, 2, 1);
                     break;
 
                 case 4:
-                    Respown(ref minoArray, initialPosArray);
-                    ForcedMoveMino(ref minoArray, -1, -2);
+                    Respown(ref fieldArray, initialPosArray);
+                    ForcedMoveMino(ref fieldArray, -1, -2);
                     break;
             }
-            Compare(minoArray, wallArray);
+            Compare(fieldArray, wallArray);
 
             if (canRotate == true)
             {
                 minoDirection = 0;
-                Rotate_field(ref field, minoArray);
-                Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+                Rotate_field(ref field, fieldArray);
+                Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
                 UnityEngine.Debug.Log("回転成功！");
                 return;
             }
         }
-        Initialize_All(ref wallArray, ref minoArray, ref initialPosArray);
+        Initialize_All(ref wallArray, ref fieldArray, ref initialPosArray);
         UnityEngine.Debug.Log("回転できない。");
     }
 
@@ -961,7 +1132,7 @@ public class Rotation
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock || minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     // 範囲外処理
                     var x = i + minoPos_x;
@@ -980,9 +1151,9 @@ public class Rotation
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock || minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
                 }
             }
         }
@@ -992,7 +1163,7 @@ public class Rotation
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (copyArray[i, j] == (int)FieldValue.MinoBlock || copyArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (copyArray[i, j] == (int)eFieldValue.MinoBlock || copyArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     minoArray[i, j] = copyArray[i, j];
                 }
@@ -1018,13 +1189,13 @@ public class Rotation
             for (int j = 0; j < field.GetLength(1); j++)
             {
                 // ミノ
-                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (field[i, j] == (int)eFieldValue.MinoBlock || field[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     minoArray[i, j] = field[i, j];
                 }
 
                 // 壁
-                if (field[i, j] == (int)FieldValue.WallBlock)
+                if (field[i, j] == (int)eFieldValue.WallBlock)
                 {
                     wallArray[i, j] = field[i, j];
                 }
@@ -1041,7 +1212,7 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
                 // ミノ
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock || minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     initialPosArray[i, j] = minoArray[i, j];
                 }
@@ -1057,12 +1228,12 @@ public class Rotation
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis && wallArray[i, j] == (int)FieldValue.Empty)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis && wallArray[i, j] == (int)eFieldValue.Empty)
                 {
                     count++;
                     UnityEngine.Debug.Log("count+1 回転軸");
                 }
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock && wallArray[i, j] == (int)FieldValue.Empty)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock && wallArray[i, j] == (int)eFieldValue.Empty)
                 {
                     count++;
                     UnityEngine.Debug.Log("count+1 ほかのブロック");
@@ -1102,7 +1273,7 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     array_mino_test[0, 0] = minoArray[i - 1, j + 1];
                     array_mino_test[0, 1] = minoArray[i, j + 1];
@@ -1113,14 +1284,14 @@ public class Rotation
                     array_mino_test[2, 0] = minoArray[i - 1, j - 1];
                     array_mino_test[1, 0] = minoArray[i - 1, j];
 
-                    minoArray[i + 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j - 1] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j - 1] = (int)FieldValue.Empty;
-                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j - 1] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j - 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 1] = (int)eFieldValue.Empty;
 
                     minoArray[i + 1, j + 1] = array_mino_test[0, 0];
                     minoArray[i + 1, j] = array_mino_test[0, 1];
@@ -1139,7 +1310,7 @@ public class Rotation
         {
             for (int j = 0; j < array_mino_test.GetLength(1); j++)
             {
-                array_mino_test[i, j] = (int)FieldValue.Empty;
+                array_mino_test[i, j] = (int)eFieldValue.Empty;
             }
         }
     }
@@ -1151,7 +1322,7 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     array_mino_test[0, 0] = minoArray[i - 1, j + 1];
                     array_mino_test[0, 1] = minoArray[i, j + 1];
@@ -1162,14 +1333,14 @@ public class Rotation
                     array_mino_test[2, 0] = minoArray[i - 1, j - 1];
                     array_mino_test[1, 0] = minoArray[i - 1, j];
 
-                    minoArray[i + 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j - 1] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j - 1] = (int)FieldValue.Empty;
-                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i + 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j - 1] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j - 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 1] = (int)eFieldValue.Empty;
 
                     minoArray[i - 1, j - 1] = array_mino_test[0, 0];
                     minoArray[i - 1, j] = array_mino_test[0, 1];
@@ -1188,7 +1359,7 @@ public class Rotation
         {
             for (int j = 0; j < array_mino_test.GetLength(1); j++)
             {
-                array_mino_test[i, j] = (int)FieldValue.Empty;
+                array_mino_test[i, j] = (int)eFieldValue.Empty;
             }
         }
     }
@@ -1203,17 +1374,17 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 2, j] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 2, j] = (int)eFieldValue.Empty;
 
-                    minoArray[i + 1, j + 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i + 1, j] = (int)FieldValue.MinoBlock_Axis;
-                    minoArray[i + 1, j - 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i + 1, j - 2] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 1, j + 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i + 1, j] = (int)eFieldValue.MinoBlock_Axis;
+                    minoArray[i + 1, j - 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i + 1, j - 2] = (int)eFieldValue.MinoBlock;
                 }
             }
         }
@@ -1226,17 +1397,17 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i, j - 1] = (int)FieldValue.Empty;
-                    minoArray[i, j - 2] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 2] = (int)eFieldValue.Empty;
 
-                    minoArray[i - 2, j - 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i - 1, j - 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j - 1] = (int)FieldValue.MinoBlock_Axis;
-                    minoArray[i + 1, j - 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 2, j - 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i - 1, j - 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j - 1] = (int)eFieldValue.MinoBlock_Axis;
+                    minoArray[i + 1, j - 1] = (int)eFieldValue.MinoBlock;
 
                 }
             }
@@ -1250,17 +1421,17 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i - 2, j] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 2, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j] = (int)eFieldValue.Empty;
 
-                    minoArray[i - 1, j + 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i - 1, j] = (int)FieldValue.MinoBlock_Axis;
-                    minoArray[i - 1, j - 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i - 1, j + 2] = (int)FieldValue.MinoBlock;
+                    minoArray[i - 1, j + 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i - 1, j] = (int)eFieldValue.MinoBlock_Axis;
+                    minoArray[i - 1, j - 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i - 1, j + 2] = (int)eFieldValue.MinoBlock;
                 }
             }
         }
@@ -1273,17 +1444,17 @@ public class Rotation
             for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i, j + 2] = (int)FieldValue.Empty;
-                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 2] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 1] = (int)eFieldValue.Empty;
 
-                    minoArray[i + 2, j + 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i + 1, j + 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j + 1] = (int)FieldValue.MinoBlock_Axis;
-                    minoArray[i - 1, j + 1] = (int)FieldValue.MinoBlock;
+                    minoArray[i + 2, j + 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i + 1, j + 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j + 1] = (int)eFieldValue.MinoBlock_Axis;
+                    minoArray[i - 1, j + 1] = (int)eFieldValue.MinoBlock;
                 }
             }
         }
@@ -1298,17 +1469,17 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 2, j] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 2, j] = (int)eFieldValue.Empty;
 
-                    minoArray[i, j + 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j - 1] = (int)FieldValue.MinoBlock_Axis;
-                    minoArray[i, j - 2] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j + 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j - 1] = (int)eFieldValue.MinoBlock_Axis;
+                    minoArray[i, j - 2] = (int)eFieldValue.MinoBlock;
                 }
             }
         }
@@ -1321,17 +1492,17 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i, j - 1] = (int)FieldValue.Empty;
-                    minoArray[i, j + 2] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 2] = (int)eFieldValue.Empty;
 
-                    minoArray[i + 2, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i - 1, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i + 1, j] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i + 2, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i - 1, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i + 1, j] = (int)eFieldValue.MinoBlock_Axis;
                 }
             }
         }
@@ -1344,17 +1515,17 @@ public class Rotation
             for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i - 2, j] = (int)FieldValue.Empty;
-                    minoArray[i - 1, j] = (int)FieldValue.Empty;
-                    minoArray[i + 1, j] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 2, j] = (int)eFieldValue.Empty;
+                    minoArray[i - 1, j] = (int)eFieldValue.Empty;
+                    minoArray[i + 1, j] = (int)eFieldValue.Empty;
 
-                    minoArray[i, j + 1] = (int)FieldValue.MinoBlock_Axis;
-                    minoArray[i, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j - 1] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j + 2] = (int)FieldValue.MinoBlock;
+                    minoArray[i, j + 1] = (int)eFieldValue.MinoBlock_Axis;
+                    minoArray[i, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j - 1] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j + 2] = (int)eFieldValue.MinoBlock;
                 }
             }
         }
@@ -1367,17 +1538,17 @@ public class Rotation
             for (int j = minoArray.GetLength(1) - 1; j > 0; j--)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    minoArray[i, j] = (int)FieldValue.Empty;
-                    minoArray[i, j + 1] = (int)FieldValue.Empty;
-                    minoArray[i, j - 2] = (int)FieldValue.Empty;
-                    minoArray[i, j - 1] = (int)FieldValue.Empty;
+                    minoArray[i, j] = (int)eFieldValue.Empty;
+                    minoArray[i, j + 1] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 2] = (int)eFieldValue.Empty;
+                    minoArray[i, j - 1] = (int)eFieldValue.Empty;
 
-                    minoArray[i - 2, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i + 1, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i, j] = (int)FieldValue.MinoBlock;
-                    minoArray[i - 1, j] = (int)FieldValue.MinoBlock_Axis;
+                    minoArray[i - 2, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i + 1, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i, j] = (int)eFieldValue.MinoBlock;
+                    minoArray[i - 1, j] = (int)eFieldValue.MinoBlock_Axis;
                 }
             }
         }
@@ -1391,9 +1562,9 @@ public class Rotation
             for (int j = 0; j < field.GetLength(1); j++)
             {
 
-                if (field[i, j] == (int)FieldValue.MinoBlock || field[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (field[i, j] == (int)eFieldValue.MinoBlock || field[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
-                    field[i, j] = (int)FieldValue.Empty;
+                    field[i, j] = (int)eFieldValue.Empty;
                 }
             }
         }
@@ -1404,7 +1575,7 @@ public class Rotation
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
 
-                if (minoArray[i, j] == (int)FieldValue.MinoBlock || minoArray[i, j] == (int)FieldValue.MinoBlock_Axis)
+                if (minoArray[i, j] == (int)eFieldValue.MinoBlock || minoArray[i, j] == (int)eFieldValue.MinoBlock_Axis)
                 {
                     field[i, j] = minoArray[i, j];
                 }
@@ -1420,11 +1591,11 @@ public class Rotation
         {
             for (int j = 0; j < minoArray.GetLength(1); j++)
             {
-                wallArray[i, j] = (int)FieldValue.Empty;
-                minoArray[i, j] = (int)FieldValue.Empty;
-                initialPosArray[i, j] = (int)FieldValue.Empty;
+                wallArray[i, j] = (int)eFieldValue.Empty;
+                minoArray[i, j] = (int)eFieldValue.Empty;
+                initialPosArray[i, j] = (int)eFieldValue.Empty;
             }
         }
     }
-
+    */
 }

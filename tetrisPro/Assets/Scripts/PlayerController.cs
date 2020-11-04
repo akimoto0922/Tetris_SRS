@@ -5,7 +5,13 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public int[,] field = new int[12, 22];  // ミノを扱う配列
+    const int respownMinoPosX = 4;          // ミノが生成される座標の X 成分
+    const int respownMinoPosY = 23;         // ミノが生成される座標の Y 成分
+
+    public int[,] field = new int[12, 23];  // ミノを扱う配列
+    public int[] minoArray = new int[9];
+    public int minoPosX;
+    public int minoPosY;
     public int currentMino;                 // 現在のミノ
     public int nextMino;                    // 次のミノ 
     public int holdMino;                    // ホールド中のミノ
@@ -36,6 +42,9 @@ public class PlayerController : MonoBehaviour
     Move move = new Move();
     Rotation rotation = new Rotation();
     RockDown rockDown = new RockDown();
+
+    Rotation.eMinoType currentMinoType;
+    Rotation.eMinoAngle currentMinoAngle = Rotation.eMinoAngle.ang0;
 
     enum Direction : int
     {
@@ -106,13 +115,13 @@ public class PlayerController : MonoBehaviour
         }
 
         Script_render.Delete();
-        Script_render.Draw(field);
+        Script_render.DrawField(field);
         
         // 自由落下
         time += Time.deltaTime;
         if (time >= dropInterval)
         {
-            move.MoveMino(field, 0, -1, ref isGround);
+            // move.MoveMino(field, 0, -1, ref isGround);
             time = 0;
         }
 
@@ -151,17 +160,23 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
+    
     private void MakeMino()
     {
         if (makeMino == true)
         {
             Script_next.NextChanger(ref currentMino, ref nextMino);
-            Script_minoCreate.CreateMino(field, currentMino);
+            Script_minoCreate.SetMinoData(ref minoArray, currentMino);
+            minoPosX = respownMinoPosX;
+            minoPosY = respownMinoPosY;
+            Script_render.DeleteMino();
+            Script_render.DrawMino(minoPosX, minoPosY, ref minoArray, currentMino);
             minoDirection = (int)Direction.Up;
             isGround = false;
             makeMino = false;
         }
     }
+
     private void Hold()
     {
         if (Input.GetKeyDown(KeyCode.Q) && isHold == false)
@@ -178,39 +193,46 @@ public class PlayerController : MonoBehaviour
                 holdMino = currentMino;
                 currentMino = createNum;
                 Script_hold.HoldMino(field, ref currentMino, ref holdMino);
-                Script_minoCreate.CreateMino(field, currentMino);
+                Script_render.DeleteMino();
+                Script_minoCreate.SetMinoData(ref minoArray, currentMino);
+                Script_render.DrawMino(minoPosX, minoPosY, ref minoArray, currentMino);
             }
             isHold = true;
         }
     }
+    
     private void Move()
     {
         // 右移動
         if (Input.GetKeyDown(KeyCode.D))
         {
-            time2 = 0;
-            if (isGround == true)
-            {
-                setCount++;
-            }
-            move.MoveMino(field, 1, 0, ref isGround);
+            //time2 = 0;
+            //if (isGround == true)
+            //{
+            //    setCount++;
+            //}
+            minoPosX = move.MoveMino(minoPosX, 1);
+            Script_render.DeleteMino();
+            Script_render.DrawMino(minoPosX, minoPosY,ref minoArray, currentMino);
         }
 
         // 左移動
         if (Input.GetKeyDown(KeyCode.A))
         {
-            time2 = 0;
-            if (isGround == true)
-            {
-                setCount++;
-            }
-            move.MoveMino(field, -1, 0, ref isGround);
+            //time2 = 0;
+            //if (isGround == true)
+            //{
+            //    setCount++;
+            //}
+            minoPosX = move.MoveMino(minoPosX, -1);
+            Script_render.DeleteMino();
+            Script_render.DrawMino(minoPosX, minoPosY, ref minoArray, currentMino);
         }
 
         // 下移動（ソフトドロップ）
         if (Input.GetKey(KeyCode.S))
         {
-            move.MoveMino(field, 0, -1, ref isGround);
+           // move.MoveMino(field, 0, -1, ref isGround);
             time2 = 0;
         }
 
@@ -219,7 +241,7 @@ public class PlayerController : MonoBehaviour
         {
             for (int i = 0; i < 20; i++)
             {
-                move.MoveMino(field, 0, -1, ref isGround);
+               // move.MoveMino(field, 0, -1, ref isGround);
             }
             time = 0;
             time2 = 0;
@@ -234,30 +256,50 @@ public class PlayerController : MonoBehaviour
             isHold = false;
         }
     }
+    
     private void Rotate()
     {
         // 右回転
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            time2 = 0;
-            if (isGround == true)
+            // ミノの向きを変える
+            // 左向き(3)の時は上向き(0)にする
+            if (minoDirection == (int)Direction.Left)
             {
-                setCount++;
+                minoDirection = (int)Direction.Up;
             }
-            rotation.RightSpin(ref field, currentMino, ref minoDirection);
+            else
+            {
+                minoDirection++;
+            }
+            rotation.RotatedMino(ref minoArray, (Rotation.eMinoType)currentMino, (Rotation.eMinoAngle)minoDirection);
+            Script_render.DeleteMino();
+            Script_render.DrawMino(minoPosX, minoPosY, ref minoArray, currentMino);
+            // TODO : 回転が失敗だった時、 minoDirectionをもとに戻す処理
+
         }
 
         // 左回転
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            time2 = 0;
-            if (isGround == true)
+            // ミノの向きを変える
+            // 上向き(0)の時は左向き(3)にする
+            if (minoDirection == (int)Direction.Up)
             {
-                setCount++;
+                minoDirection = (int)Direction.Left;
             }
-            rotation.LeftSpin(ref field, currentMino, ref minoDirection);
+            else
+            {
+                minoDirection--;
+            }
+            rotation.RotatedMino(ref minoArray, (Rotation.eMinoType)currentMino, (Rotation.eMinoAngle)minoDirection);
+            Script_render.DeleteMino();
+            Script_render.DrawMino(minoPosX, minoPosY, ref minoArray, currentMino);
+            // TODO : 回転が失敗だった時、 minoDirectionをもとに戻す処理
+
         }
     }
+    
     private void GetScript()
     {
         Script_render = render.GetComponent<Render>();
@@ -266,6 +308,7 @@ public class PlayerController : MonoBehaviour
         Script_minoCreate = minoCreate.GetComponent<MinoCreate>();
         Script_lineClear = lineClear.GetComponent<LineClear>();
     }
+    
     private void Intialize()
     {
         // field を初期化
