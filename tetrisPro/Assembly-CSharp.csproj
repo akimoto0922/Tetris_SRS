@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\LevelManager.cs" />
     <Compile Include="Assets\Scripts\LineClear.cs" />
     <Compile Include="Assets\Scripts\MinoCreate.cs" />
+    <Compile Include="Assets\Scripts\MinoData.cs" />
     <Compile Include="Assets\Scripts\Move.cs" />
     <Compile Include="Assets\Scripts\Next.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />

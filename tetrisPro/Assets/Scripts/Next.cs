@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
+using Tetris.Mino;
 
 public class Next : MonoBehaviour
 {
@@ -65,10 +66,10 @@ public class Next : MonoBehaviour
         }
     }
 
-    public void NextChanger(ref int currentMino,ref int nextMino)
+    public void NextChanger(ref MinoData.eMinoType currentMino,ref MinoData.eMinoType nextMino)
     {
-        currentMino = this.nextMino[0];
-        nextMino = this.nextMino[1];
+        currentMino = (MinoData.eMinoType)this.nextMino[0];
+        nextMino = (MinoData.eMinoType)this.nextMino[1];
         // nextMinoの中身を繰り上げ配列の最後を空にする
         var empty = 7;
         for (int i = 0; i < this.nextMino.Length - 1; i++)

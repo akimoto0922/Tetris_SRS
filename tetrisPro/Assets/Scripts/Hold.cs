@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Tetris.Mino;
+using Tetris.Rotation;
 
 public class Hold : MonoBehaviour
 {
@@ -13,7 +15,7 @@ public class Hold : MonoBehaviour
         m_Image = gameObject.GetComponent<Image>();
     }
 
-    public void HoldMino(int[,] field, ref int currentMino, ref int holdMino)
+    public void HoldMino(int[,] field, ref MinoData.eMinoType currentMino, ref MinoData.eMinoType holdMino)
     {
         for (int i = 1; i < field.GetLength(0) - 1; i++)
         {
@@ -28,6 +30,6 @@ public class Hold : MonoBehaviour
         }
 
         // ホールドの画像を入れ替える
-        m_Image.sprite = m_Sprite[holdMino];
+        m_Image.sprite = m_Sprite[(int)holdMino];
     }
 }
