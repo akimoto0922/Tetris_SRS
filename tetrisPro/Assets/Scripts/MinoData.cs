@@ -29,6 +29,20 @@ namespace Tetris.Mino
             ang270
         }
 
+        public enum eRotateInfo : int
+        {
+            // 右回転
+            _0to90,
+            _90to180,
+            _180to270,
+            _270to360,
+            // 左回転
+            _360to270,
+            _270to180,
+            _180to90,
+            _90to0
+        }
+
         // ミノの辺の長さ
         public const int MINO_SIDE_LENGTH = 3;
         // ミノの配列のサイズ
@@ -90,12 +104,14 @@ namespace Tetris.Mino
             },
             new int[I_MINO_SIZE]
             {
-              0,1,0,0,
-              0,1,0,0,
-              0,1,0,0,
-              0,1,0,0,
+              0,0,0,0,
+              1,1,1,1,
+              0,0,0,0,
+              0,0,0,0,
             }
         };
+
+        // privateにしてGet関数描いた方がよい
 
         public static void CheckArray(in int[] array, in eMinoType type)
         {

@@ -20,24 +20,27 @@ public class Render : MonoBehaviour
         const int FIELDLEFT = 0;
         const int FIELDRIGHT = 11;
 
-        for (int i = 0; i < field.GetLength(0); i++)
+        int yMax = field.GetLength(0);
+        int xMax = field.GetLength(1);
+
+        for (int y = yMax - 1; y >= 0; --y)
         {
-            for (int j = 0; j < field.GetLength(1); j++)
+            for (int x = xMax - 1; x >= 0; --x)
             {
-                if (i == FIELDLEFT || i == FIELDRIGHT)
+                if (x == FIELDLEFT || x == FIELDRIGHT)
                 {
-                    field[i, j] = (int)Rotation.eFieldValue.WallBlock;
-                    Instantiate(flameBlock, new Vector3(i, j, 73), Quaternion.identity);
+                    field[y, x] = (int)Rotation.eFieldValue.WallBlock;
+                    Instantiate(flameBlock, new Vector3(x, y, 73), Quaternion.identity);
                 }
-                if (j == FIELDTOP)
+                if (y == FIELDTOP)
                 {
-                    field[i, j] = (int)Rotation.eFieldValue.WallBlock;
-                    Instantiate(flameBlockTop, new Vector3(i , j - 0.2f, 73), Quaternion.identity);
+                    field[y, x] = (int)Rotation.eFieldValue.WallBlock;
+                    Instantiate(flameBlockTop, new Vector3(x, y - 0.2f, 73), Quaternion.identity);
                 }
-                if (j == FIELDBOTTOM)
+                if (y == FIELDBOTTOM)
                 {
-                    field[i, j] = (int)Rotation.eFieldValue.WallBlock;
-                    Instantiate(flameBlock, new Vector3(i, j, 73), Quaternion.identity);
+                    field[y, x] = (int)Rotation.eFieldValue.WallBlock;
+                    Instantiate(flameBlock, new Vector3(x, y, 73), Quaternion.identity);
                 }
             }
         }
@@ -46,41 +49,63 @@ public class Render : MonoBehaviour
     // Fieldを描画
     public void DrawField(int[,] field)
     {
-        for (int i = 0; i < field.GetLength(0); i++)
+        int yMax = field.GetLength(0);
+        int xMax = field.GetLength(1);
+        for (int y = yMax - 1; y >= 0; --y)
         {
-
-            for (int j = 0; j < field.GetLength(1); j++)
+            int idxY = yMax - 1 - y;
+            for (int x = 0; x < xMax; ++x)
             {
                 // ブロックがないとき
-                if (field[i, j] == (int)Rotation.eFieldValue.Empty)
+                if (field[idxY, x] == (int)Rotation.eFieldValue.Empty)
                 {
-                    Instantiate(emptyBlock, new Vector3(i, j, 75), Quaternion.identity);
+                    Instantiate(emptyBlock, new Vector3(x, y, 75), Quaternion.identity);
+                    //UnityEngine.Debug.DrawLine(new Vector3(x, y, 75), new Vector3(x, y, -75), Color.red, 10f);
                 }
                 // ブロックがあるとき
-                if (field[i, j] == (int)Rotation.eFieldValue.WallBlock)
+                else if (field[idxY, x] == (int)Rotation.eFieldValue.WallBlock)
                 {
-                    Instantiate(minoBlock, new Vector3(i, j, 75), Quaternion.identity);
+                    Instantiate(flameBlock, new Vector3(x, y, 7), Quaternion.identity);
+                    //UnityEngine.Debug.DrawLine(new Vector3(x, y, 75), new Vector3(x, y, -75), Color.blue, 10f);
                 }
             }
         }
     }
 
     // Minoを描画
-    public void DrawMino(int xPos, int yPos,ref int[] minoArray, MinoData.eMinoType currentMino)
+    public void DrawMino(int xPos, int yPos,ref int[] minoArray, MinoData.eMinoType type)
     {
+        int size;
         int sideLength;
-        // Iミノは 4 * 4 マスなため sizeが変わる
-        if (currentMino == MinoData.eMinoType.I)
+
+        yPos = Tetris.Field.FieldData.FIELD_HEIGHT - 1 - yPos;
+
+        // Iミノのみ特殊 
+        if (type == MinoData.eMinoType.I)
         {
+            size = MinoData.I_MINO_SIZE;
             sideLength = MinoData.I_MINO_SIDE_LENGTH;
         }
-        else if(currentMino == MinoData.eMinoType.O)
+        else if (type == MinoData.eMinoType.O)
         {
+            size = MinoData.O_MINO_SIZE;
             sideLength = MinoData.O_MINO_SIDE_LENGTH;
         }
         else
         {
+            size = MinoData.MINO_SIZE;
             sideLength = MinoData.MINO_SIDE_LENGTH;
+        }
+
+        int[,] array = new int[sideLength, sideLength];
+
+        for (int i = 0; i < size; i++)
+        {
+            // 配列を2次元配列にコピー
+            int indexX = i % sideLength;
+            int indexY = i / sideLength;
+
+            array[indexY, indexX] = minoArray[i];
         }
 
         // 1次元配列のミノのデータを Field の座標に変換
@@ -88,17 +113,12 @@ public class Render : MonoBehaviour
         int length = minoArray.Length;
         for (int i = 0; i < length; i++)
         {
+            int x = i % sideLength;
+            int y = i / sideLength;
+
             if (minoArray[i] == (int)Rotation.eFieldValue.MinoBlock)
             {
-                Instantiate(minoBlock, new Vector3(xPos, yPos, 74), Quaternion.identity);
-            }
-            xPos++;
-            count++;
-            if (count == sideLength)
-            {
-                xPos -= sideLength;
-                yPos--;
-                count = 0;
+                Instantiate(minoBlock, new Vector3(xPos + x, yPos - y, 74), Quaternion.identity);
             }
         }
     }

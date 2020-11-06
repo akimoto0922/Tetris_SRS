@@ -1,15 +1,4 @@
-﻿/*
- *＜テストの方法＞
- * 1.field からミノの位置(minoArray)と壁の位置(wallArray)をそれぞれ違う配列にコピーする
- * 2.minoArrayのミノを回転させる
- * 3.minoArray のミノの位置を指定した座標に動かす（最初はその場で、2回目から座標をずらす）(https://tetris.wiki/Super_Rotation_System 動かす座標の表はこのサイトを参考)
- * 4.minoArray と wallArray を比較し、minoArray のミノの位置に wallArry で壁があるかどうか調べる。4つのブロックがすべて空の部分にあるなら回転成功
- * 5.minoArray のミノの位置を field に反映させる。
- * 6.最後にテストで使った配列を初期化して終わり。
-*/
-
-using System;
-using Tetris.Mino;
+﻿using Tetris.Mino;
 
 namespace Tetris.Rotation
 {
@@ -18,13 +7,7 @@ namespace Tetris.Rotation
 
     public class Rotation
     {
-        int[,] fieldArray = new int[12, 22];         // field のミノ(アクティブなブロック)を格納するための配列
-        int[,] wallArray = new int[12, 22];         // field の壁（固定されたブロック）を格納するための配列
-        int[,] initialPosArray = new int[12, 22];   // テストを開始した時のミノ（アクティブなブロック）の初期位置を格納するための配列
-        int[,] array_mino_test = new int[4, 4];     // 回転させるときに仮置きするための配列　←　今書いてて、グローバルじゃなくていい気がした。
-
-        //------------------------------------------------------------------------------------------------------------------------------------------------
-
+        Move move = new Move();
         public enum eFieldValue : int
         {
             Empty,          // 空の部分
@@ -32,36 +15,62 @@ namespace Tetris.Rotation
             WallBlock,      // 固定されたブロック
         }
 
+        public enum eRotateInfo : int
+        {
+            // 右回転
+            _0To_90,
+            _90To_180,
+            _180To_270,
+            _270To_360,
+            // 左回転
+            _360To_270,
+            _270To_180,
+            _180To_90,
+            _90To_0
+        }
 
         // ミノのタイプ、ミノの向きをもらって、配列の値を返す
-        public void RotatedMino(ref int[] minoArray, eMinoType currentMino, eMinoAngle minoAngle)
+        public void RotatedMino(int[,]field,  ref int[] minoArray, eMinoType currentMino, eMinoAngle minoAngle, ref int minoPosX, ref int minoPosY, bool isRightSpin)
         {
             int[] copyArray;
-            const int TEST_NUM = 4;
+            const int TEST_NUM = 5;
+
             // 回転させる
             Rotate(out copyArray, currentMino, minoAngle);
+
+            // SRS利用時の添え字を取得する
+            int info = GetRotateInfo(minoAngle, isRightSpin);
+            UnityEngine.Debug.Log("RotateInfo = " + (MinoData.eRotateInfo)info);
+
 
             // 壁と被らないかチェック
             for (int i = 0; i < TEST_NUM; i++)
             {
-                if (WallCheck())
+                UnityEngine.Debug.Log(i + " "+"回目のテスト");
+                // minoPosを(x, y)にどれだけ動かすか、値を取得
+                var x = (int)WallKickData.GetKickData(currentMino, (MinoData.eRotateInfo)info, i).x;
+                var y = (int)WallKickData.GetKickData(currentMino, (MinoData.eRotateInfo)info, i).y;
+
+                // ミノを取得した座標に動かす
+                move.MoveMino(ref minoPosX, ref minoPosY, x, -y);
+
+                // 壁と重なっていないかチェック
+                if (move.CheckWall(field, copyArray, minoPosX, minoPosY, currentMino))
                 {
-                    // 回転後の配列の値を代入
+                    // 回転後の配列の値を代入し処理を抜ける
                     for (int j = 0; j < minoArray.Length; j++)
                     {
                         minoArray[j] = copyArray[j];
                     }
-
-                    break;
+                    return;
                 }
                 else
                 {
-                    // ミノの座標を動かす
-                   //  SetMinoPosition(currentMino, i, posX, posY);
+                    // 失敗時は元の座標に戻してから再度計算。
+                    UnityEngine.Debug.Log("座標をもとの位置に戻します。");
+                    move.MoveMino(ref minoPosX, ref minoPosY, -x, y);
                 }
             }
-
-
         }
 
         // ミノを回転させる
@@ -112,19 +121,33 @@ namespace Tetris.Rotation
             }
         }
 
-        // 壁と重なってないかチェック
-        bool WallCheck()
+        // SRSのテスト時の添え字を取得する
+        int GetRotateInfo(eMinoAngle angle, bool isRightSpin) 
         {
-            bool canRotate = true;
-
-            return canRotate;
+            if (isRightSpin)
+            {
+                switch (angle)
+                {
+                    case eMinoAngle.ang0:   return (int)eRotateInfo._270To_360;
+                    case eMinoAngle.ang90:  return (int)eRotateInfo._0To_90;
+                    case eMinoAngle.ang180: return (int)eRotateInfo._90To_180;
+                    case eMinoAngle.ang270: return (int)eRotateInfo._180To_270;
+                    default:                return -1;
+                }
+            }
+            else
+            {
+                switch (angle)
+                {
+                    case eMinoAngle.ang0:   return (int)eRotateInfo._90To_0;
+                    case eMinoAngle.ang90:  return (int)eRotateInfo._180To_90;
+                    case eMinoAngle.ang180: return (int)eRotateInfo._270To_180;
+                    case eMinoAngle.ang270: return (int)eRotateInfo._360To_270;
+                    default:                return -1;
+                }
+            }
         }
 
-        // SRS
-        private void SetMinoPosition()
-        {
-            
-        }
         //------------------------------------------------------------------------------------------------------------------------------------------------
         /*
         bool canRotate;     // 回転可能かどうか
@@ -1518,5 +1541,4 @@ namespace Tetris.Rotation
         }
         */
     }
-
 }
